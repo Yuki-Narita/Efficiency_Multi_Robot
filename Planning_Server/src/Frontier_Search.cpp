@@ -1,6 +1,6 @@
 #include <multi_robot/Frontier_Search.hpp>
 
-int main (int argc, char** argv)
+int main(int argc, char **argv)
 {
     ros::init(argc, argv, "Frontier_Search");
 
@@ -25,6 +25,7 @@ int main (int argc, char** argv)
             FS.Set_Data();
             FS.Target_Info_Publish();
         }
+        
         else
         {
             if(!FS.isinput())
