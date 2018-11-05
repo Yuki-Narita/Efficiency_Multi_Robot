@@ -3,7 +3,6 @@
 
 #include<ros/ros.h> 
 #include<ros/callback_queue.h>
-#include<multi_robot/Target_Info.h>
 #include<iostream>
 #include<vector>
 

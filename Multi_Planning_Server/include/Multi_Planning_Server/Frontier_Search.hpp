@@ -13,10 +13,9 @@ class Frontier_Search
         ros::NodeHandle fp;
         ros::Subscriber subff;
         ros::Publisher pub0;		
-		nav_msgs::OccupancyGrid msg;
 		geometry_msgs::PoseStamped Pose;
         
-        bool input;        
+        bool input;
         
         //const nav_msgs::MapMetaData msg.info;
 
@@ -64,6 +63,7 @@ class Frontier_Search
 
     public:
         ros::CallbackQueue queueF;
+		nav_msgs::OccupancyGrid msg;
 		bool stop;
         
         Frontier_Search():
@@ -86,13 +86,13 @@ class Frontier_Search
 		{
 			ff.setCallbackQueue(&queueF);
     		subff = ff.subscribe("/map", 1, &Frontier_Search::FSinput, this);
-    		pub0 = fp.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1000);
+    		pub0 = fp.advertise<geometry_msgs::PoseStamped>("/Frontier_Target", 1000);
 
 		};
         ~Frontier_Search();
         void FSinput(const nav_msgs::OccupancyGrid::ConstPtr& mmsg);//マップの更新を監視
         void Storage(void);//マップ用配列を用意
-		void Map_Init(nav_msgs::OccupancyGrid msg);//配列にマップデータを格納。
+		void Map_Init(nav_msgs::OccupancyGrid &msg);//配列にマップデータを格納。
 		bool isinput(void);//マップが更新され、ＦＳinputが実行されたらフラグを建てる
         void resetFlag(void);//立てたフラグを戻す
         void Boundary_Search(void);//境界判定用関数にするつもりだったが縦横で共通の仕様が考えられなかったのでとりあえず放置
@@ -170,7 +170,7 @@ void Frontier_Search::Storage(void)
 	//void Map_Init(msg);
 }
 
-void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid msg)
+void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid &msg)
 {
 		std::cout << "start:地図データを配列に格納" << std::endl;
 

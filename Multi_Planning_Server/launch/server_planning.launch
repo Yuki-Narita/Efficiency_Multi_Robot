@@ -1,0 +1,5 @@
+<launch>
+    
+    <node pkg="Multi_Planning_Server" type="Frontier_Search" name="Frontier_Search" launch-prefix="gnome-terminal -x gdb --args"/>
+    <!-- <node pkg="Multi_Planning_Server" type="server_planning" name="server_planning"/> -->
+</launch>

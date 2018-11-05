@@ -1,4 +1,4 @@
-#include <multi_robot/Frontier_Search.hpp>
+#include <Multi_Planning_Server/Frontier_Search.hpp>
 
 int main(int argc, char **argv)
 {
@@ -13,9 +13,8 @@ int main(int argc, char **argv)
         if(FS.isinput())
         {
             //ここにＦｒｏｎｔｉｅｒ＿Ｓｅａｒｃｈの一連の処理に必要な関数を書く
-            //FS.Storage();//多分いらない
             FS.Storage();
-            //FS.Map_Init();//ここで配列にマップデータを格納する。
+            FS.Map_Init(FS.msg);//ここで配列にマップデータを格納する。
             FS.Side_Search();
             FS.Vatical_Search();
             FS.Side_Continuity_Search();

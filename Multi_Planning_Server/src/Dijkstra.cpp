@@ -1,6 +1,6 @@
-#include<multi_robot/Dijkstra.hpp>
+#include<Multi_Planning_Server/Dijkstra.hpp>
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     ros::init(argc, argv, "Dijkstra");
 

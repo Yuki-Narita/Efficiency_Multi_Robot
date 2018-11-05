@@ -7,10 +7,14 @@
 #include<geometry_msgs/PoseStamped.h>
 #include<nav_msgs/Odometry.h>
 
+std::string robot_name;
+int robot_number;
+
 class robot_moving
 {
     private:
-    bool arrive;
+        int robot_num;
+        std::string robot_name;
 
 
     public:
@@ -21,7 +25,9 @@ class robot_moving
         void numbering(void);
         void getfrontier(const geometry_msgs::PoseStamped::ConstPtr &pose);
         void running(void);
-        void arrive(void);
+        void arrive(const nav_msgs::Odometry &odom);
+        
+        bool arrive_flag;
 };
 inline geometry_msgs::PoseStamped Target;//Frontier_Searchから受け取った目的地の座標。
 
@@ -42,9 +48,9 @@ void robot_moving::firstturn(void)//ロボットが最初に２回転して地�
         ros::Rate r(rate);
         ros::Publisher cmd_pub;
         ros::NodeHandle cn;
-        double angular_speed = 1.0;
-        double goal_angle = 4*M_PI;
-        double angular_duration = goal_angle/angular_speed;
+        const double angular_speed = 0.2;
+        const double goal_angle = 4*M_PI;
+        const double angular_duration = goal_angle/angular_speed;
         ROS_INFO_STREAM("goal angular: " << goal_angle);
         int ticks = int(angular_duration * rate);
 
@@ -71,8 +77,10 @@ void robot_moving::firstturn(void)//ロボットが最初に２回転して地�
         }
         cmd_pub.publish(empty);
 }
+/*
 void robot_moving::numbering(void)//ロボットにIDをナンバリングする関数。
 {}
+*/
 void robot_moving::getfrontier(const geometry_msgs::PoseStamped::ConstPtr &pose)//Frontier_Searchノードからパブリッシュされる目的地の座標を受け取る関数。
 {
     Target.header = pose -> header;
@@ -81,7 +89,7 @@ void robot_moving::getfrontier(const geometry_msgs::PoseStamped::ConstPtr &pose)
 /*
 void robot_moving::running(void)
 {
-    
+    //ロボットの探査動作を書く。
 }
 */
 void robot_moving::arrive(const nav_msgs::Odometry &odom)//ロボットが目的地に到着したかどうかを判定する関数。
@@ -105,4 +113,6 @@ void robot_moving::arrive(const nav_msgs::Odometry &odom)//ロボットが目的
     }
     
 }
+
+
 #endif

@@ -1,8 +1,10 @@
 
 <launch>
+    <arg name="robot_name" default="robot1"/>
+    
     <!-- -->
     <node pkg="multi_robot" name="robot_moving" type="robot_moving" />
-    <!-- <node pkg="multi_robot" name="Dijkstra" type="Dijkstra" /> -->
+    
 
     <group name="multi_robot">
         <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/>

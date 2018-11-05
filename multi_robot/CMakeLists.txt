@@ -205,11 +205,5 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(Frontier_Search src/Frontier_Search.cpp)
-target_link_libraries(Frontier_Search ${catkin_LIBRARIES})
-
-
-
-
-
-
+add_executable(robot_moving src/robot_moving.cpp)
+target_link_libraries(robot_moving ${catkin_LIBRARIES})
