@@ -5,6 +5,7 @@
 #include <vector>
 #include <geometry_msgs/PoseStamped.h>
 
+
 class Frontier_Search
 {
 
@@ -15,7 +16,6 @@ class Frontier_Search
         ros::Publisher pub0;		
 		geometry_msgs::PoseStamped Pose;
         
-        bool input;
         
         //const nav_msgs::MapMetaData msg.info;
 
@@ -23,14 +23,14 @@ class Frontier_Search
         float frontier_y;
 		int frontier_num;
 
-        const float m_per_cell;//[m/cell]
-    	const float search_len;//障害物を検索する正方形の一辺の長さ[m](都合上10倍して自然数の偶数になる値のみで計算時は+m_per_cell[m]される)
-    	const float robot_diameter; //ロボットの直径は0.4[m]
-    	const int search_len_cell;//セル換算した正方形の一辺の長さ
-    	const int robot_cellsize;//セル換算したロボットサイズ
-    	const float low_left_x;//地図の左下のx座標
-    	const float low_left_y;//地図の左下のy座標
-    	const int half_sq;//正方形の一辺の半分の長さ(セル)
+        float m_per_cell;//[m/cell]
+    	float search_len;//障害物を検索する正方形の一辺の長さ[m](都合上10倍して自然数の偶数になる値のみで計算時は+m_per_cell[m]される)
+    	float robot_diameter; //ロボットの直径は0.4[m]
+    	int search_len_cell;//セル換算した正方形の一辺の長さ
+    	int robot_cellsize;//セル換算したロボットサイズ
+    	float low_left_x;//地図の左下のx座標
+    	float low_left_y;//地図の左下のy座標
+    	int half_sq;//正方形の一辺の半分の長さ(セル)
 
 
     	int frontier_sum;//フラグが続いているかの判定用
@@ -48,8 +48,8 @@ class Frontier_Search
     	int continuity;
     	int start_k;
     	int end_k;
-    	const int search_width;//フラグの連続を検索するときの線の太さ(奇数)
-    	const int search_margin;
+    	int search_width;//フラグの連続を検索するときの線の太さ(奇数)
+    	int search_margin;
 
 
         int half_leftx;//四角形の左半分の長さ
@@ -60,6 +60,7 @@ class Frontier_Search
 	    int8_t **map_array;
         int **point;
         int **frontier_flag;
+		bool input;
 
     public:
         ros::CallbackQueue queueF;
@@ -67,22 +68,15 @@ class Frontier_Search
 		bool stop;
         
         Frontier_Search():
-		m_per_cell(msg.info.resolution),
 		search_len(0.4),
 		robot_diameter(0.4),
-		search_len_cell(search_len / m_per_cell),
-		robot_cellsize(robot_diameter / m_per_cell),
-		low_left_x(msg.info.origin.position.x),
-		low_left_y(msg.info.origin.position.y),
 		half_sq(search_len_cell / 2),
 		pre_fronum(0),
 		continuity(0),
     	start_k(0),
     	end_k(0),
     	search_width(3),
-    	search_margin(search_width/2),
-		x(msg.info.width),
-		y(msg.info.height)
+    	search_margin(search_width/2)
 		{
 			ff.setCallbackQueue(&queueF);
     		subff = ff.subscribe("/map", 1, &Frontier_Search::FSinput, this);
@@ -103,8 +97,7 @@ class Frontier_Search
 		void Vatical_Continuity_Search(void);//縦方向に連続領域を検索
 		void Add_Obstacle(void);//配列に障害物情報を追加する関数
         void Search_Obstacle(void);//
-        void Set_Data(void);//計算した結果をパブリッシャー用に変換する関数。
-        int Target_Info_Publish(void);//結果をパブリッシュする関数。
+        void Publish_Data(void);//計算した結果をパブリッシャー用に変換する関数。
 };
 /*
 Frontier_Search::Frontier_Search():
@@ -170,15 +163,16 @@ void Frontier_Search::Storage(void)
 	//void Map_Init(msg);
 }
 
-void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid &msg)
+void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid& msg)
 {
-		std::cout << "start:地図データを配列に格納" << std::endl;
-
+	k=0;
+	std::cout << "start:地図データを配列に格納" << std::endl;
+	std::cout << "X:" << x << "Y:" << y << "K:" << k << std::endl; 
 	for(i=0;i<y;i++){
     		for(j=0;j<x;j++){
       			map_array[j][i] = msg.data[k];
 				if(map_array[j][i]!=0 && map_array[j][i]!=100 && map_array[j][i]!=-1)
-				{
+				{	
 					std::cout << "exception:" << map_array[j][i] << std::endl;		
 				}
 				frontier_flag[j][i] = 0;
@@ -186,7 +180,7 @@ void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid &msg)
       			k++;
     		}
   	}
-
+	
 	std::cout << "end  :地図データを配列に格納" << std::endl;
 }
 
@@ -215,7 +209,17 @@ void Frontier_Search::FSinput(const nav_msgs::OccupancyGrid::ConstPtr& mmsg)
 {
     //ここでサブスクライブされたメッセージのデータをこのクラスのメンバ変数などに代入して使えるようにする。
 	msg = *mmsg;
+	x = msg.info.width;
+	y = msg.info.height;
+	m_per_cell = msg.info.resolution;
+	low_left_x = msg.info.origin.position.x;
+	low_left_y = msg.info.origin.position.y;
+	search_len_cell = search_len / m_per_cell;
+	robot_cellsize = robot_diameter / m_per_cell;
 	input = true;
+
+	std::cout << "map hight:" << msg.info.height << "y:" << y << std::endl;
+	std::cout << "map width:" << msg.info.width << "x:" << x << std::endl;
 	std::cout << "FSinput Done." << std::endl;
 }
 
@@ -341,18 +345,18 @@ void Frontier_Search::Search_Obstacle(void)
 	}
 }
 
-void Frontier_Search::Set_Data(void)
+void Frontier_Search::Publish_Data(void)
 {
-	Pose.header.seq++;
-	Pose.header.stamp = ros::Time::now();
-	Pose.header.frame_id = "goal";
-	Pose.pose.position.x = fro_x.at(1);
-	Pose.pose.position.y = fro_y.at(1);
-}
-
-int Frontier_Search::Target_Info_Publish(void)
-{
-	pub0.publish(Pose);
+	for(int i=0; i < fro_x.size();i++)
+	{
+		Pose.header.seq++;
+		Pose.header.stamp = ros::Time::now();
+		Pose.header.frame_id = "goal";
+		Pose.pose.position.x = fro_x[i];
+		Pose.pose.position.y = fro_y[i];
+		//std::cout << "fro_x:" << Pose.pose.position.x << "fro_y:" << Pose.pose.position.y << std::endl;
+		pub0.publish(Pose);
+	}
 }
 
 void Frontier_Search::Side_Search(void)
@@ -397,6 +401,7 @@ void Frontier_Search::Side_Continuity_Search(void)
 
 	for(j=search_margin;j<(x-search_margin);j=j+search_width){
 		k = 0;
+		pre_fronum=0;
 		while(k < y && ros::ok()){
 			for(v=-search_margin;v<=search_margin;v++){
 				frontier_sum += frontier_flag[j+v][k];

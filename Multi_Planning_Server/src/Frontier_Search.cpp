@@ -21,10 +21,8 @@ int main(int argc, char **argv)
             FS.Vatical_Continuity_Search();
             FS.Add_Obstacle();
             FS.Search_Obstacle();
-            FS.Set_Data();
-            FS.Target_Info_Publish();
+            FS.Publish_Data();
         }
-        
         else
         {
             if(!FS.isinput())

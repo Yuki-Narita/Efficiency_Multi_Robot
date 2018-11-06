@@ -25,9 +25,13 @@ class robot_moving
         void numbering(void);
         void getfrontier(const geometry_msgs::PoseStamped::ConstPtr &pose);
         void running(void);
-        void arrive(const nav_msgs::Odometry &odom);
-        
+        void arrive(const nav_msgs::Odometry::ConstPtr &odom);
+        bool setflag(void);
+        void resetflag(void);
+
         bool arrive_flag;
+        bool Target_flag;
+        bool stop;
 };
 inline geometry_msgs::PoseStamped Target;//Frontier_Searchから受け取った目的地の座標。
 
@@ -85,6 +89,7 @@ void robot_moving::getfrontier(const geometry_msgs::PoseStamped::ConstPtr &pose)
 {
     Target.header = pose -> header;
     Target.pose = pose -> pose;    
+    Target_flag = true;
 }
 /*
 void robot_moving::running(void)
@@ -92,7 +97,7 @@ void robot_moving::running(void)
     //ロボットの探査動作を書く。
 }
 */
-void robot_moving::arrive(const nav_msgs::Odometry &odom)//ロボットが目的地に到着したかどうかを判定する関数。
+void robot_moving::arrive(const nav_msgs::Odometry::ConstPtr &odom)//ロボットが目的地に到着したかどうかを判定する関数。
 {
     nav_msgs::Odometry Odom;
     Odom.header = odom -> header;
@@ -105,14 +110,19 @@ void robot_moving::arrive(const nav_msgs::Odometry &odom)//ロボットが目的
     goal_dis = sqrt(pow(Target.pose.position.x,2) - pow(Odom.pose.pose.position.x,2));
     if(goal_dis >= goal_margin)
     {
-        arrive = false;
+        arrive_flag = false;
     }
     else
     {
-        arrive = true;
+        arrive_flag = true;
     }
     
 }
 
+void robot_moving::resetflag(void)
+{
+    Target_flag = false;
+    arrive_flag = false;
+}
 
 #endif

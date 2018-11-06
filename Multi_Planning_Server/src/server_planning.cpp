@@ -12,33 +12,26 @@ int main(int argc, char **argv)
             SP.queueM.callOne(ros::WallDuration(1));
             if(SP.map_isinput())
             {
-                if(arrive_flag)
+                if(robot_num >= fro_num)
                 {
-                    if(robot_num>fro_num)
-                    {//ロボットの数の方がフロンティアセルより多いのでロボットの振り分けをする。
-    
-                        SP.getrobotstatus();//ロボットの状態を取得
-                        SP.OptimalTarget();//状態を取得したロボットの自己位置を始点に実経路で最も近い目的地を設定する。
-                        SP.setrobotstatus();//ロボットの状態を更新する。
-                    }
-                    else if(robot_num == fro_num)
-                    {//それぞれがそれぞれの目標に向かう
-                        SP.getrobotstatus();//ロボットの状態を取得
-                        SP.OptimalTarget();//状態を取得したロボットの自己位置を始点に実経路で最も近い目的地を設定する。
-                        SP.setrobotstatus();//ロボットの状態を更新する。
-                    }
-                    else if(robot_num < fro_num)
-                    {
-                        //
-                        SP.getrobotstatus();//ロボットの状態を取得
-                        SP.OptimalTarget();//状態を取得したロボットの自己位置を始点に実経路で最も近い目的地を設定する。
-                        SP.setrobotstatus();//ロボットの状態を更新する。
-                    }
+                    //ロボットの数の方がフロンティアセルより多いのでロボットの振り分けをする。
+                }
+                else if(robot_num < fro_num)
+                {
+                    //ロボットの数の方がフロンティアセルより少ない時でのロボットの振り分け方。
+                }
+                else
+                {
+                    ROS_ERROR_STREAM("フロンティアセルとロボット数の条件分岐でのエラー。");
                 }
             }
-            else(!SP.map_isinput())
+            else if(!SP.map_isinput())
             {
-                ROS_FATAL_STREAM("Planning_Serverの起動に失敗。");
+                ROS_FATAL_STREAM("Planning_Serveでマップの更新なし。");
+            }
+            else
+            {
+                ROS_ERROR_STREAM("Planning_Serverでマップの更新に失敗。");
             }
         }
 
