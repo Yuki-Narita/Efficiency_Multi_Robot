@@ -70,18 +70,22 @@ class Frontier_Search
         Frontier_Search():
 		search_len(0.4),
 		robot_diameter(0.4),
-		half_sq(search_len_cell / 2),
 		pre_fronum(0),
 		continuity(0),
     	start_k(0),
     	end_k(0),
-    	search_width(3),
-    	search_margin(search_width/2)
+    	search_width(3)
 		{
 			ff.setCallbackQueue(&queueF);
     		subff = ff.subscribe("/map", 1, &Frontier_Search::FSinput, this);
     		pub0 = fp.advertise<geometry_msgs::PoseStamped>("/Frontier_Target", 1000);
-
+			std::cout << "search_len :" << search_len << std::endl;
+			std::cout << "robot_diameter:" << robot_diameter << std::endl;
+			std::cout << "pre_fronum:" << pre_fronum << std::endl;
+			std::cout << "continuity:" << continuity << std::endl;
+			std::cout << "start_k:" << start_k << std::endl;
+			std::cout << "end_k:" << end_k << std::endl;
+			std::cout << "search_width:" << search_width << std::endl;
 		};
         ~Frontier_Search();
         void FSinput(const nav_msgs::OccupancyGrid::ConstPtr& mmsg);//マップの更新を監視
@@ -89,11 +93,9 @@ class Frontier_Search
 		void Map_Init(nav_msgs::OccupancyGrid &msg);//配列にマップデータを格納。
 		bool isinput(void);//マップが更新され、ＦＳinputが実行されたらフラグを建てる
         void resetFlag(void);//立てたフラグを戻す
-        void Boundary_Search(void);//境界判定用関数にするつもりだったが縦横で共通の仕様が考えられなかったのでとりあえず放置
-		void Side_Search(void);//横方向に境界を検索する関数
+        void Side_Search(void);//横方向に境界を検索する関数
         void Vatical_Search(void);//縦方向に境界を検索する関数
-        void Continuity_boundary_Search(void);//境界で連続してフロンティア領域が存在するかを確認する関数。前のBoundary_Searchと同様の理由で放置
-		void Side_Continuity_Search(void);//横方向に連続領域を検索
+        void Side_Continuity_Search(void);//横方向に連続領域を検索
 		void Vatical_Continuity_Search(void);//縦方向に連続領域を検索
 		void Add_Obstacle(void);//配列に障害物情報を追加する関数
         void Search_Obstacle(void);//
@@ -184,27 +186,6 @@ void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid& msg)
 	std::cout << "end  :地図データを配列に格納" << std::endl;
 }
 
-void Frontier_Search::Boundary_Search(void)
-{
-	std::cout << "start:横方向で境界を検索" << std::endl;
-	for(int i=0;i<y;i++)
-    {
-    	for(int j=0;j<(x-1);j++)
-        {
-      		if(map_array[j][i] == 0 && map_array[j+1][i] == -1)
-            {
-	      		frontier_flag[j][i] = 1;
-		    }
-        	else if(map_array[j][i] == -1 && map_array[j+1][i] == 0)
-            {
-			    frontier_flag[j+1][i] = 1;
-		    }
-    	}
-  	}
-	std::cout << "end  :横方向で境界を検索" << " ここまで" << std::endl;
-}
-
-
 void Frontier_Search::FSinput(const nav_msgs::OccupancyGrid::ConstPtr& mmsg)
 {
     //ここでサブスクライブされたメッセージのデータをこのクラスのメンバ変数などに代入して使えるようにする。
@@ -216,10 +197,17 @@ void Frontier_Search::FSinput(const nav_msgs::OccupancyGrid::ConstPtr& mmsg)
 	low_left_y = msg.info.origin.position.y;
 	search_len_cell = search_len / m_per_cell;
 	robot_cellsize = robot_diameter / m_per_cell;
+	half_sq = search_len_cell / 2;
+	search_margin = search_width /2;
 	input = true;
 
 	std::cout << "map hight:" << msg.info.height << "y:" << y << std::endl;
 	std::cout << "map width:" << msg.info.width << "x:" << x << std::endl;
+	std::cout << "m_per_cell:" << m_per_cell << std::endl;
+	std::cout << "search_len_cell:" << search_len_cell << std::endl;
+	std::cout << "robot_cellsize:" << robot_cellsize << std::endl;
+	std::cout << "half_sq:" << half_sq << std::endl;
+	std::cout << "search_margin:" << search_margin << std::endl;
 	std::cout << "FSinput Done." << std::endl;
 }
 
@@ -233,56 +221,16 @@ void Frontier_Search::resetFlag(void)
     input = false;
 }
 
-void Frontier_Search::Continuity_boundary_Search(void)
-{
-	for(i=search_margin;i<(y-search_margin);i=i+search_width){
-		k = 0;
-		while(k < x && ros::ok()){
-			for(v=-search_margin;v<=search_margin;v++){
-				frontier_sum += frontier_flag[k][i+v];
-			}
-			if(frontier_sum > 0){
-				start_k = k;
-				while(frontier_sum > 0 && ros::ok()){
-					frontier_sum = 0;
-					continuity++;
-					if(k < x){
-						k++;
-						for(v=-search_margin;v<=search_margin;v++){
-							frontier_sum += frontier_flag[k][i+v];
-						}
-					}
-					else{	
-						k++;
-						break;
-					}
-					//std::cout << k << "," << x << std::endl;
-				}
-				end_k = k-1;
-				if(continuity >= robot_cellsize){
-					frontier_center = (start_k + end_k)/2;
-					flo2int = frontier_center;
-					point[flo2int][i] = 1;
-					pre_frox.push_back(flo2int);
-					pre_froy.push_back(i);
-					pre_fronum++;
-				}
-			}
-			else{			
-				k++;
-			}
-		}
-	}
-}
-
-
 void Frontier_Search::Search_Obstacle(void)
 {
 	std::cout << "start:未探査領域周辺の障害物を検索" << std::endl;
+	std::cout << "pre_fronum:" << pre_fronum << std::endl;
     for(k=0;k<pre_fronum;k++){
-		
+		std::cout << "pre_frox[k]:" << pre_frox[k] << std::endl;
 		if(pre_frox[k]-half_sq < 0){
+			std::cout << "half_leftx:" << half_leftx << std::endl;
 			half_leftx = pre_frox[k];
+			std::cout << "half_leftx:" << half_leftx << std::endl;
 		}
 		else{
 			half_leftx = half_sq;
@@ -313,12 +261,13 @@ void Frontier_Search::Search_Obstacle(void)
 		}
 		
 		frontier_sum = 0;
-		
+		std::cout << "previent frontier_sum:" << frontier_sum << std::endl;
 		for(i=(pre_froy[k]-half_topy);i<(pre_froy[k]+half_bottomy+1);i++){
 			for(j=(pre_frox[k]-half_leftx);j<(pre_frox[k]+half_rightx+1);j++){
 				frontier_sum+=point[j][i];
 			}
 		}
+		std::cout << "after frontier_sum:" << frontier_sum << std::endl;
 
 		if(frontier_sum>100){
 			point[pre_frox[k]][pre_froy[k]] = 0;
@@ -326,23 +275,25 @@ void Frontier_Search::Search_Obstacle(void)
 	}
 		//最終的な未探査領域を配列に格納
 	for(j=0;j<x;j++){
-    		for(i=0;i<y;i++){
-      			if(point[j][i] == 1){
-	       			fro_x.push_back(m_per_cell * j + low_left_x);
-					fro_y.push_back(m_per_cell * i + low_left_y);
-				}
-    		}
+    	for(i=0;i<y;i++){
+      		if(point[j][i] == 1){
+	    		fro_x.push_back(m_per_cell * j + low_left_x);
+				fro_y.push_back(m_per_cell * i + low_left_y);
+				fro_num++;
+			}
+    	}
   	}
 
 	std::cout << "障害物判定前の未探査領域の個数 " << pre_fronum << std::endl;
 	std::cout << "障害物判定後の未探査領域の個数 " << fro_num << std::endl;
 
 	std::cout << "end  :未探査領域周辺の障害物を検索" << std::endl;
-
+	
 	if(fro_num == 0){
 		stop = true;
 		return;
 	}
+	
 }
 
 void Frontier_Search::Publish_Data(void)
@@ -363,16 +314,22 @@ void Frontier_Search::Side_Search(void)
 {
 
 	std::cout << "start:横方向で境界を検索" << std::endl;
-
-	for(i=0;i<y;i++){
-    		for(j=0;j<(x-1);j++){
-      			if(map_array[j][i] == 0 && map_array[j+1][i] == -1){
-	       			frontier_flag[j][i] = 1;
-			}
-        		else if(map_array[j][i] == -1 && map_array[j+1][i] == 0){
-				frontier_flag[j+1][i] = 1;	
-			}
+	std::cout << "Side_Search\t" << "X:" << x << "Y:" << y << std::endl;
+	for(i=0;i<y;i++)
+	{
+    		for(j=0;j<(x-1);j++)
+			{
+      			if(map_array[j][i] == 0 && map_array[j+1][i] == -1)
+				{
+					frontier_flag[j][i] = 1;
+				}
+        		else if(map_array[j][i] == -1 && map_array[j+1][i] == 0)
+				{
+					frontier_flag[j+1][i] = 1;
+				}
+					//std::cout << frontier_flag[j][i] << " ";
     		}
+			//std::cout << std::endl;
   	}
 	std::cout << "end  :横方向で境界を検索" << " ここまで" << std::endl;
 
@@ -390,18 +347,21 @@ void Frontier_Search::Vatical_Search(void)
         		else if(map_array[j][i] == -1 && map_array[j][i+1] == 0){
 				frontier_flag[j][i+1] = 1;	
 			}
+			std::cout << frontier_flag[j][i];
     		}
+			std::cout << std::endl;
   	}
 
 	std::cout << "end  :縦方向で境界を検索" << std::endl;
 }
 
-void Frontier_Search::Side_Continuity_Search(void)
+void Frontier_Search::Vatical_Continuity_Search(void)
 {
+	std::cout << "start:  縦方向で境界が連続している場所を検索" << std::endl;
 
 	for(j=search_margin;j<(x-search_margin);j=j+search_width){
 		k = 0;
-		pre_fronum=0;
+		
 		while(k < y && ros::ok()){
 			for(v=-search_margin;v<=search_margin;v++){
 				frontier_sum += frontier_flag[j+v][k];
@@ -442,9 +402,16 @@ void Frontier_Search::Side_Continuity_Search(void)
 
 }
 
-void Frontier_Search::Vatical_Continuity_Search(void)
+void Frontier_Search::Side_Continuity_Search(void)
 {
-
+	std::cout << "start  :横方向で境界が連続している場所を検索" << std::endl;
+	pre_fronum = 0;
+	fro_num = 0;
+	continuity = 0;
+	start_k = 0;
+	end_k = 0;
+	std::cout << "search_margin: " << search_margin << std::endl;
+	std::cout << "search_margin: " << search_margin << std::endl;
 	for(i=search_margin;i<(y-search_margin);i=i+search_width){
 		k = 0;
 		while(k < x && ros::ok()){
@@ -484,7 +451,7 @@ void Frontier_Search::Vatical_Continuity_Search(void)
 		}
 	}
 	
-	std::cout << "end  :縦方向で境界が連続している場所を検索" << std::endl;
+	std::cout << "end  :横方向で境界が連続している場所を検索" << std::endl;
 
 }
 
