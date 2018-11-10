@@ -4,6 +4,8 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <vector>
 #include <geometry_msgs/PoseStamped.h>
+#include <visualization_msgs/Marker.h>
+#include <iostream>
 
 
 class Frontier_Search
@@ -13,10 +15,15 @@ class Frontier_Search
         ros::NodeHandle ff;
         ros::NodeHandle fp;
         ros::Subscriber subff;
-        ros::Publisher pub0;		
+        ros::Publisher pub0;
 		geometry_msgs::PoseStamped Pose;
-        
-        
+
+        //vis用
+		ros::Publisher vis_pub;		
+		ros::NodeHandle vis;
+		visualization_msgs::Marker marker;
+        //
+
         //const nav_msgs::MapMetaData msg.info;
 
         float frontier_x;
@@ -62,6 +69,9 @@ class Frontier_Search
         int **frontier_flag;
 		bool input;
 
+		//vis用]
+		uint32_t shape = visualization_msgs::Marker::CUBE;
+
     public:
         ros::CallbackQueue queueF;
 		nav_msgs::OccupancyGrid msg;
@@ -79,6 +89,7 @@ class Frontier_Search
 			ff.setCallbackQueue(&queueF);
     		subff = ff.subscribe("/map", 1, &Frontier_Search::FSinput, this);
     		pub0 = fp.advertise<geometry_msgs::PoseStamped>("/Frontier_Target", 1000);
+			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker", 1);
 			std::cout << "search_len :" << search_len << std::endl;
 			std::cout << "robot_diameter:" << robot_diameter << std::endl;
 			std::cout << "pre_fronum:" << pre_fronum << std::endl;
@@ -100,27 +111,9 @@ class Frontier_Search
 		void Add_Obstacle(void);//配列に障害物情報を追加する関数
         void Search_Obstacle(void);//
         void Publish_Data(void);//計算した結果をパブリッシャー用に変換する関数。
+		void Publish_marker(void);
 };
-/*
-Frontier_Search::Frontier_Search():
-	m_per_cell(msg.info.resolution),
-	search_len(0.4),
-	robot_diameter(0.4),
-	search_len_cell(search_len / m_per_cell),
-	robot_cellsize(robot_diameter / m_per_cell),
-	low_left_x(msg.info.origin.position.x),
-	low_left_y(msg.info.origin.position.y),
-	half_sq(search_len_cell / 2),
-	pre_fronum(0),
-	continuity(0),
-    start_k(0),
-    end_k(0),
-    search_width(3),
-    search_margin(search_width/2)
-{
 
-}
-*/
 Frontier_Search::~Frontier_Search()
 {
 		//newで確保したメモリを開放する
@@ -298,16 +291,47 @@ void Frontier_Search::Search_Obstacle(void)
 
 void Frontier_Search::Publish_Data(void)
 {
-	for(int i=0; i < fro_x.size();i++)
+	for(int i=0; i < fro_num;i++)
 	{
-		Pose.header.seq++;
 		Pose.header.stamp = ros::Time::now();
-		Pose.header.frame_id = "goal";
+		Pose.header.frame_id = "map";
 		Pose.pose.position.x = fro_x[i];
 		Pose.pose.position.y = fro_y[i];
 		//std::cout << "fro_x:" << Pose.pose.position.x << "fro_y:" << Pose.pose.position.y << std::endl;
 		pub0.publish(Pose);
 	}
+}
+
+void Frontier_Search::Publish_marker(void)
+{
+        uint32_t shape = visualization_msgs::Marker::CUBE_LIST;
+        marker.header.frame_id = "map";
+        marker.header.stamp = ros::Time::now();
+        marker.ns = "Frontier";
+        marker.id = 0;
+        marker.type = shape;
+        marker.action = visualization_msgs::Marker::ADD;
+		
+        marker.lifetime = ros::Duration();
+
+        marker.scale.x = 0.1;
+        marker.scale.y = 0.1;
+        marker.scale.z = 0.1;
+        
+        marker.color.r = 0.0f;
+        marker.color.g = 1.0f;
+        marker.color.b = 0.0f;
+        marker.color.a = 1.0f;
+
+		geometry_msgs::Point p;
+		for(int i=0; i < fro_num;i++)
+		{
+			p.x = fro_x[i];
+			p.y = fro_y[i];
+			marker.points.push_back(p);
+		}
+		vis_pub.publish(marker);
+
 }
 
 void Frontier_Search::Side_Search(void)

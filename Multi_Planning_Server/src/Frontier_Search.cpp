@@ -22,6 +22,7 @@ int main(int argc, char **argv)
             FS.Add_Obstacle();
             FS.Search_Obstacle();
             FS.Publish_Data();
+            FS.Publish_marker();
         }
         else
         {
