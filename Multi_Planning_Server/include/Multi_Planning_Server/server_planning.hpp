@@ -5,6 +5,7 @@
 #include<ros/callback_queue.h>
 #include<geometry_msgs/PoseStamped.h>
 #include<nav_msgs/OccupancyGrid.h>
+#include<std_srvs/Empty.h>
 
 bool arrive_flag;
 int robot_num;
@@ -20,6 +21,7 @@ class server_planning
     ~server_planning();
     void OptimalTarget(const geometry_msgs::PoseStamped::ConstPtr &Target);
     void getfrontier(const geometry_msgs::PoseStamped::ConstPtr &Target);
+    void calculate_path_length(void);
     void map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg);
     bool map_isinput(void);
 
@@ -59,7 +61,7 @@ void server_planning::getfrontier(const geometry_msgs::PoseStamped::ConstPtr &Ta
 }
 void server_planning::OptimalTarget(const geometry_msgs::PoseStamped::ConstPtr &Target)
 {
-    //ロボットの自己位置と各目標地点とのパスを取得
+    //ロボットの自己位置と各目標地点とのパスを取得してロボットの自己位置に対する最も近い
     //
 }
 void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
@@ -70,9 +72,13 @@ void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     isinput = true;
     ROS_INFO_STREAM("Mapが更新された。");
 }
-bool server_planning::map_isinput()
+bool server_planning::map_isinput(void)
 {
-    return map_isinput;
+    return isinput;
+}
+void calculate_path_length(void)
+{
+
 }
 
 #endif

@@ -6,7 +6,17 @@ int main(int argc, char **argv)
     ros::Publisher pub2FS;
     ros::Subscriber subFS;
     server_planning SP;
+    //serverとつながっているロボットの個数とロボットの名前を取得
     
+    // robot_movingからの初期回転の完了を検知する。
+    ros::NodeHandle srv_nh;
+    ros::ServiceClient firstturnClient = srv_nh.serviceClient<std_srvs::Empty>("TURN");
+    std_srvs::Empty::Request req;
+    std_srvs::Empty::Response res;
+    bool result =firstturnClient.call(req,res);
+    if(result) ROS_INFO_STREAM("回転完了");
+    else ROS_INFO_STREAM("回転失敗");
+
         while(ros::ok())
         {
             SP.queueM.callOne(ros::WallDuration(1));

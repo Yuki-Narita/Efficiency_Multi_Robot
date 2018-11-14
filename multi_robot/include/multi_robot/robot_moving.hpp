@@ -6,6 +6,7 @@
 #include<geometry_msgs/Twist.h>
 #include<geometry_msgs/PoseStamped.h>
 #include<nav_msgs/Odometry.h>
+#include<std_srvs/Empty.h>
 
 std::string robot_name;
 int robot_number;
@@ -15,6 +16,7 @@ class robot_moving
     private:
         int robot_num;
         std::string robot_name;
+        geometry_msgs::PoseStamped Target;//Frontier_Searchから受け取った目的地の座標。
 
 
     public:
@@ -23,26 +25,26 @@ class robot_moving
 
         void firstturn(void);
         void numbering(void);
-        void getfrontier(const geometry_msgs::PoseStamped::ConstPtr &pose);
+        void setgoal(const geometry_msgs::PoseStamped::ConstPtr &pose);
         void running(void);
         void arrive(const nav_msgs::Odometry::ConstPtr &odom);
         bool setflag(void);
         void resetflag(void);
+        bool srvCB(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
+        ros::Subscriber sub;
+        ros::Publisher pub;
+        ros::CallbackQueue queueR;
+        ros::NodeHandle nh;
         bool arrive_flag;
         bool Target_flag;
         bool stop;
 };
-inline geometry_msgs::PoseStamped Target;//Frontier_Searchから受け取った目的地の座標。
 
 robot_moving::robot_moving()
 {
-    ros::Subscriber sub;
-    ros::Publisher pub;
-    ros::CallbackQueue queueR;
-    ros::NodeHandle nh;
     nh.setCallbackQueue(&queueR);
-    sub=nh.subscribe("/move_base_simple/goal", 100, &robot_moving::getfrontier, this);
+    sub=nh.subscribe("/move_base_simple/goal", 100, &robot_moving::setgoal, this);
 }
 robot_moving::~robot_moving()
 {}
@@ -85,7 +87,7 @@ void robot_moving::firstturn(void)//ロボットが最初に２回転して地�
 void robot_moving::numbering(void)//ロボットにIDをナンバリングする関数。
 {}
 */
-void robot_moving::getfrontier(const geometry_msgs::PoseStamped::ConstPtr &pose)//Frontier_Searchノードからパブリッシュされる目的地の座標を受け取る関数。
+void robot_moving::setgoal(const geometry_msgs::PoseStamped::ConstPtr &pose)//Frontier_Searchノードからパブリッシュされる目的地の座標を受け取る関数。
 {
     Target.header = pose -> header;
     Target.pose = pose -> pose;    
@@ -100,10 +102,7 @@ void robot_moving::running(void)
 void robot_moving::arrive(const nav_msgs::Odometry::ConstPtr &odom)//ロボットが目的地に到着したかどうかを判定する関数。
 {
     nav_msgs::Odometry Odom;
-    Odom.header = odom -> header;
-    Odom.pose = odom -> pose;
-    Odom.twist = odom -> twist;
-
+    Odom = *odom;
     double goal_margin = 0.5;
     float goal_dis;
 
@@ -123,6 +122,13 @@ void robot_moving::resetflag(void)
 {
     Target_flag = false;
     arrive_flag = false;
+}
+
+bool robot_moving::srvCB(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+    ROS_INFO_STREAM("robot_moving:  回転開始");
+    firstturn();//最初の局所地図を作成する。
+    ROS_INFO_STREAM("robot_moving:  回転完了");
 }
 
 #endif

@@ -88,7 +88,7 @@ class Frontier_Search
 		{
 			ff.setCallbackQueue(&queueF);
     		subff = ff.subscribe("/map", 1, &Frontier_Search::FSinput, this);
-    		pub0 = fp.advertise<geometry_msgs::PoseStamped>("/Frontier_Target", 1000);
+    		pub0 = fp.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
 			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker", 1);
 			std::cout << "search_len :" << search_len << std::endl;
 			std::cout << "robot_diameter:" << robot_diameter << std::endl;
@@ -297,6 +297,10 @@ void Frontier_Search::Publish_Data(void)
 		Pose.header.frame_id = "map";
 		Pose.pose.position.x = fro_x[i];
 		Pose.pose.position.y = fro_y[i];
+		Pose.pose.orientation.x = 0.0;
+		Pose.pose.orientation.y = 0.0;
+		Pose.pose.orientation.z = 0.0;
+		Pose.pose.orientation.w = 1.0;
 		//std::cout << "fro_x:" << Pose.pose.position.x << "fro_y:" << Pose.pose.position.y << std::endl;
 		pub0.publish(Pose);
 	}
