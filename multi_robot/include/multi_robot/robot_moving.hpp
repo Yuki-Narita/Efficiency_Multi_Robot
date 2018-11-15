@@ -19,7 +19,6 @@ class robot_moving
         std::string robot_name;
         geometry_msgs::PoseStamped Target;//Frontier_Searchから受け取った目的地の座標。
 
-
     public:
         robot_moving();
         ~robot_moving();
@@ -31,12 +30,14 @@ class robot_moving
         void arrive(const nav_msgs::Odometry::ConstPtr &odom);
         bool setflag(void);
         void resetflag(void);
-        bool srvCB(std_srvs::Empty &srv);
+        //bool srvCB(std_srvs::Empty &srv);
+        void firstturnCB(const std_msgs::String::ConstPtr& msg);
 
         ros::Subscriber sub;
         ros::Publisher pub;
         ros::CallbackQueue queueR;
         ros::NodeHandle nh;
+        std_msgs::String pub_msg;
         bool arrive_flag;
         bool Target_flag;
         bool stop;
@@ -56,8 +57,8 @@ void robot_moving::firstturn(void)//ロボットが最初に２回転して地�
         ros::Rate r(rate);
         ros::Publisher cmd_pub;
         ros::NodeHandle cn;
-        const double angular_speed = 0.2;
-        const double goal_angle = 4*M_PI;
+        const double angular_speed = 0.5;
+        const double goal_angle = 2*M_PI;
         const double angular_duration = goal_angle/angular_speed;
         ROS_INFO_STREAM("goal angular: " << goal_angle);
         int ticks = int(angular_duration * rate);
@@ -72,16 +73,16 @@ void robot_moving::firstturn(void)//ロボットが最初に２回転して地�
         empty = move_cmd;
 
         move_cmd.angular.z = angular_speed;
-        cmd_pub = cn.advertise<geometry_msgs::Twist>("cmd_vel",5);
+        cmd_pub = cn.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop",5);
 
         int i=0;
         std::cout << "探査開始" << std::endl;
         std::cout << "初期地図を作成します。" << std::endl;
-        while(1)
+        for(i=0; i<ticks; i++)
         {
+            std::cout << "i:" << i << std::endl;
             cmd_pub.publish(move_cmd);
-            i++;
-            if(i==ticks)break;
+            r.sleep();
         }
         cmd_pub.publish(empty);
 }
@@ -126,14 +127,24 @@ void robot_moving::resetflag(void)
     arrive_flag = false;
 }
 
-
+/*
 bool robot_moving::srvCB(std_srvs::Empty &srv)
 {
     ROS_INFO_STREAM("robot_moving:  回転開始");
     firstturn();//最初の局所地図を作成する。
-    ROS_INFO_STREAM("robot_moving:  回転完了");
+    ROS_INFO_STREAM("robot_moving:  回転完了");sdfasdfa
     turn_fin = true;
     return true;
+}
+*/
+void robot_moving::firstturnCB(const std_msgs::String::ConstPtr& msg)
+{
+    std::cout << msg << std::endl;
+    ROS_INFO_STREAM("robot_moving:  turning start.");
+    firstturn();//最初の局所地図を作成する。
+    ROS_INFO_STREAM("robot_moving:  turning complete");
+    pub_msg.data = "turning done.";
+    turn_fin = true;
 }
 
 

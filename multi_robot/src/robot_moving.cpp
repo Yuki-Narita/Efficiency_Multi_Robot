@@ -8,11 +8,13 @@ int main(int argc, char **argv)
 
     robot_moving RM;
     ros::NodeHandle nh;
-/*
+    ros::NodeHandle turn_nh;
+
+    ros::SubscribeOptions turn_req_option;
     ros::Subscriber turn_req_sub;
     ros::Publisher turn_fin_pub;
-*/  
 
+/*//サービスが正常に通信できない問題未解決
     ros::NodeHandle srv_nh;
     geometry_msgs::PoseStamped fro_msg;
     ros::ServiceServer srv = srv_nh.advertiseService("TURN", &robot_moving::srvCB, &RM);
@@ -22,14 +24,15 @@ int main(int argc, char **argv)
         ros::spinOnce();
         std::cout << "test" << std::endl;
     }
-
-/*
+*/  
+    turn_req_sub = turn_nh.subscribe("/firstturn", 1, &robot_moving::firstturnCB, &RM);
     while(ros::ok() && !RM.turn_fin)
     {
-        turn_req_sub = turn_nh.subscribe("/first_turn", 1, &robot_moving::firstturnCB);
+        turn_fin_pub = turn_nh.advertise<std_msgs::String>("/turnfin", 1);
+        turn_fin_pub.publish(RM.pub_msg);
+        ros::spinOnce();
     }
-    turn_fin_pub = turn_nh.advertise<std_msgs::String>("/turnfin", 1);
-*/
+
     RM.queueR.callOne(ros::WallDuration(1));//ゴールを取得
 
     while(!RM.stop && ros::ok())
@@ -37,21 +40,18 @@ int main(int argc, char **argv)
         if(RM.Target_flag && !RM.arrive_flag)
         {
             //目的地まで移動する。
-            ROS_INFO_STREAM("ターゲットがあってかつ到着していない。");
+            std::cout << "ターゲットがあってかつ到着していない。" << std::endl;
             //ifで目的地に到着したかを判定する。
         }
         else if(RM.Target_flag && RM.arrive_flag)
         {
-            ROS_INFO_STREAM("ターゲットがあってかつ到着した。");
+            std::cout << "ターゲットがあってかつ到着した。" << std::endl;
         }
         else
         {
-            ROS_ERROR_STREAM("問題発生。処理を終了する。");
+            std::cout << "問題発生。処理を終了する。" << std::endl;
             RM.stop = true;
         }
-        
     }
-    
     return 0;
 }
-

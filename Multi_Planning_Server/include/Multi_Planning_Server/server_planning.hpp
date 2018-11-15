@@ -37,6 +37,8 @@ class server_planning
     ros::CallbackQueue queueS;
     ros::CallbackQueue queueF;
     ros::CallbackQueue queueM;
+    std_msgs::String pub_msg;
+    std_msgs::String sub_msg;
     bool isinput;
     bool turn_fin;
 };
@@ -72,7 +74,7 @@ void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     m_msg.header = msg -> header;
     m_msg.info = msg -> info;
     isinput = true;
-    ROS_INFO_STREAM("Mapが更新された。");
+    ROS_INFO_STREAM("Map is updated");
 }
 bool server_planning::map_isinput(void)
 {
@@ -81,6 +83,12 @@ bool server_planning::map_isinput(void)
 void calculate_path_length(void)
 {
 
+}
+void server_planning::turn_fin_CB(const std_msgs::String::ConstPtr &msg)
+{
+    sub_msg = *msg;
+    turn_fin = true;
+    std::cout << "turn_fin_CB was done." << std::endl;
 }
 
 

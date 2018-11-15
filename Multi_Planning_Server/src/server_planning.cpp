@@ -12,7 +12,7 @@ int main(int argc, char **argv)
     //serverとつながっているロボットの個数とロボットの名前を取得
     
     // robot_movingからの初期回転の完了を検知する。
-    
+    /*
     ros::NodeHandle srv_nh;
     ros::ServiceClient firstturnClient = srv_nh.serviceClient<std_srvs::Empty>("TURN");
     std_srvs::Empty srv;
@@ -27,15 +27,19 @@ int main(int argc, char **argv)
     {
         ROS_INFO_STREAM("false");
     }
+    */
 
 
-/*
-        while(ros::ok() && !SP.turn_fin)
-        {
-            turn_req_pub = turn_nh.advertise<std_msgs::String>("/firstturn",1);
-            turn_sub = turn_nh.subscribe("/turnfin", 1, &server_planning::turn_fin_CB,);
-        }
-*/
+
+    turn_req_pub = turn_nh.advertise<std_msgs::String>("/firstturn",1);
+    SP.pub_msg.data = "turn now";
+    while(ros::ok() && !SP.turn_fin)
+    {
+        turn_sub = turn_nh.subscribe("/turnfin", 1, &server_planning::turn_fin_CB, &SP);
+        turn_req_pub.publish(SP.pub_msg);
+        std::cout << SP.sub_msg << std::endl;
+        ros::spinOnce();
+    }
         while(ros::ok())
         {
             SP.queueM.callOne(ros::WallDuration(1));
