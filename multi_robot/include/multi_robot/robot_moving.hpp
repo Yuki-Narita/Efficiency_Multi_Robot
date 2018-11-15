@@ -6,6 +6,7 @@
 #include<geometry_msgs/Twist.h>
 #include<geometry_msgs/PoseStamped.h>
 #include<nav_msgs/Odometry.h>
+#include<std_msgs/String.h>
 #include<std_srvs/Empty.h>
 
 std::string robot_name;
@@ -30,7 +31,7 @@ class robot_moving
         void arrive(const nav_msgs::Odometry::ConstPtr &odom);
         bool setflag(void);
         void resetflag(void);
-        bool srvCB(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+        bool srvCB(std_srvs::Empty &srv);
 
         ros::Subscriber sub;
         ros::Publisher pub;
@@ -39,6 +40,7 @@ class robot_moving
         bool arrive_flag;
         bool Target_flag;
         bool stop;
+        bool turn_fin = false;
 };
 
 robot_moving::robot_moving()
@@ -124,11 +126,15 @@ void robot_moving::resetflag(void)
     arrive_flag = false;
 }
 
-bool robot_moving::srvCB(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+
+bool robot_moving::srvCB(std_srvs::Empty &srv)
 {
     ROS_INFO_STREAM("robot_moving:  回転開始");
     firstturn();//最初の局所地図を作成する。
     ROS_INFO_STREAM("robot_moving:  回転完了");
+    turn_fin = true;
+    return true;
 }
+
 
 #endif

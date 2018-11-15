@@ -8,15 +8,28 @@ int main(int argc, char **argv)
 
     robot_moving RM;
     ros::NodeHandle nh;
+/*
+    ros::Subscriber turn_req_sub;
+    ros::Publisher turn_fin_pub;
+*/  
+
     ros::NodeHandle srv_nh;
     geometry_msgs::PoseStamped fro_msg;
     ros::ServiceServer srv = srv_nh.advertiseService("TURN", &robot_moving::srvCB, &RM);
-    while(ros::ok())
+    ROS_INFO_STREAM("service is ready.");
+    while(ros::ok() && !RM.turn_fin)
     {
         ros::spinOnce();
+        std::cout << "test" << std::endl;
     }
 
-
+/*
+    while(ros::ok() && !RM.turn_fin)
+    {
+        turn_req_sub = turn_nh.subscribe("/first_turn", 1, &robot_moving::firstturnCB);
+    }
+    turn_fin_pub = turn_nh.advertise<std_msgs::String>("/turnfin", 1);
+*/
     RM.queueR.callOne(ros::WallDuration(1));//ゴールを取得
 
     while(!RM.stop && ros::ok())

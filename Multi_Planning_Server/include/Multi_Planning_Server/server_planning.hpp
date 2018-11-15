@@ -6,6 +6,7 @@
 #include<geometry_msgs/PoseStamped.h>
 #include<nav_msgs/OccupancyGrid.h>
 #include<std_srvs/Empty.h>
+#include<std_msgs/String.h>
 
 bool arrive_flag;
 int robot_num;
@@ -24,6 +25,7 @@ class server_planning
     void calculate_path_length(void);
     void map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg);
     bool map_isinput(void);
+    void turn_fin_CB(const std_msgs::String::ConstPtr &turn_msg);
 
     ros::Subscriber path_sub;
     ros::Subscriber Target_sub;
@@ -36,7 +38,7 @@ class server_planning
     ros::CallbackQueue queueF;
     ros::CallbackQueue queueM;
     bool isinput;
-
+    bool turn_fin;
 };
 
 server_planning::server_planning()
@@ -80,5 +82,6 @@ void calculate_path_length(void)
 {
 
 }
+
 
 #endif
