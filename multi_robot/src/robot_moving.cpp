@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     ros::Subscriber turn_req_sub;
     ros::Publisher turn_fin_pub;
 
-/*//サービスが正常に通信できない問題未解決
+//サービスが正常に通信できない問題未解決
     ros::NodeHandle srv_nh;
     geometry_msgs::PoseStamped fro_msg;
     ros::ServiceServer srv = srv_nh.advertiseService("TURN", &robot_moving::srvCB, &RM);
@@ -24,7 +24,7 @@ int main(int argc, char **argv)
         ros::spinOnce();
         std::cout << "test" << std::endl;
     }
-*/  
+/*  
     turn_req_sub = turn_nh.subscribe("/firstturn", 1, &robot_moving::firstturnCB, &RM);
     while(ros::ok() && !RM.turn_fin)
     {
@@ -32,9 +32,8 @@ int main(int argc, char **argv)
         turn_fin_pub.publish(RM.pub_msg);
         ros::spinOnce();
     }
-
+*/
     RM.queueR.callOne(ros::WallDuration(1));//ゴールを取得
-
     while(!RM.stop && ros::ok())
     {
         if(RM.Target_flag && !RM.arrive_flag)

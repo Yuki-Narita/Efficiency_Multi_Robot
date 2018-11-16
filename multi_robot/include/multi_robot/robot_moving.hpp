@@ -30,7 +30,7 @@ class robot_moving
         void arrive(const nav_msgs::Odometry::ConstPtr &odom);
         bool setflag(void);
         void resetflag(void);
-        //bool srvCB(std_srvs::Empty &srv);
+        bool srvCB(std_srvs::Empty::Request &req,std_srvs::Empty::Response &res);
         void firstturnCB(const std_msgs::String::ConstPtr& msg);
 
         ros::Subscriber sub;
@@ -127,16 +127,18 @@ void robot_moving::resetflag(void)
     arrive_flag = false;
 }
 
-/*
-bool robot_moving::srvCB(std_srvs::Empty &srv)
+
+bool robot_moving::srvCB(std_srvs::Empty::Request &req,std_srvs::Empty::Response &res)
 {
-    ROS_INFO_STREAM("robot_moving:  回転開始");
+    //ROS_INFO_STREAM("robot_moving:  回転開始");
+    ROS_INFO_STREAM("robot_moving:  rotate-start");
     firstturn();//最初の局所地図を作成する。
-    ROS_INFO_STREAM("robot_moving:  回転完了");sdfasdfa
+    //ROS_INFO_STREAM("robot_moving:  回転完了");
+    ROS_INFO_STREAM("robot_moving:  rotate-finish");
     turn_fin = true;
     return true;
 }
-*/
+
 void robot_moving::firstturnCB(const std_msgs::String::ConstPtr& msg)
 {
     std::cout << msg << std::endl;
