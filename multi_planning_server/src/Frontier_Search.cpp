@@ -1,4 +1,4 @@
-#include <Multi_Planning_Server/Frontier_Search.hpp>
+#include <multi_planning_server/Frontier_Search.hpp>
 
 int main(int argc, char **argv)
 {
@@ -23,6 +23,7 @@ int main(int argc, char **argv)
             FS.Search_Obstacle();
             FS.Publish_Data();
             FS.Publish_marker();
+            FS.Memory_release();
         }
         else
         {

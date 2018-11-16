@@ -88,7 +88,7 @@ class Frontier_Search
 		{
 			ff.setCallbackQueue(&queueF);
     		subff = ff.subscribe("/map", 1, &Frontier_Search::FSinput, this);
-    		//pub0 = fp.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
+    		pub0 = fp.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
 			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker", 1);
 			std::cout << "search_len :" << search_len << std::endl;
 			std::cout << "robot_diameter:" << robot_diameter << std::endl;
@@ -112,12 +112,14 @@ class Frontier_Search
         void Search_Obstacle(void);//
         void Publish_Data(void);//計算した結果をパブリッシャー用に変換する関数。
 		void Publish_marker(void);
+		void Memory_release(void);
 };
 
 Frontier_Search::~Frontier_Search()
+{}
+void Frontier_Search::Memory_release(void)
 {
-		//newで確保したメモリを開放する
-	for(int p=0;p<x;p++){
+		for(int p=0;p<x;p++){
                 delete[] map_array[p];
         }
         delete[] map_array;
@@ -131,8 +133,7 @@ Frontier_Search::~Frontier_Search()
                 delete[] frontier_flag[p];
         }
         delete[] frontier_flag;
-
-	std::cout << "end  :frontier_search" << std::endl;
+		std::cout << "メモリ解放" << std::endl;
 }
 
 void Frontier_Search::Storage(void)
@@ -318,9 +319,9 @@ void Frontier_Search::Publish_marker(void)
 		
         marker.lifetime = ros::Duration();
 
-        marker.scale.x = 0.1;
-        marker.scale.y = 0.1;
-        marker.scale.z = 0.1;
+        marker.scale.x = 0.05;
+        marker.scale.y = 0.05;
+        marker.scale.z = 0.05;
         
         marker.color.r = 0.0f;
         marker.color.g = 1.0f;

@@ -1,4 +1,4 @@
-#include<Multi_Planning_Server/server_planning.hpp>
+#include<multi_planning_server/server_planning.hpp>
 
 int main(int argc, char **argv)
 {
@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     // robot_movingからの初期回転の完了を検知する。
     
     ros::NodeHandle srv_nh;
-    ros::ServiceClient firstturnClient = srv_nh.serviceClient<std_srvs::Empty>("TURN");
+    ros::ServiceClient firstturnClient = srv_nh.serviceClient<std_srvs::Empty>("/TURN");
     std_srvs::Empty srv;
     while(ros::ok())
     {

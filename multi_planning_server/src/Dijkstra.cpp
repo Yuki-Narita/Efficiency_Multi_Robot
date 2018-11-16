@@ -1,4 +1,4 @@
-#include<Multi_Planning_Server/Dijkstra.hpp>
+#include<multi_planning_server/Dijkstra.hpp>
 
 int main(int argc, char **argv)
 {

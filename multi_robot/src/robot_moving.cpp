@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 //サービスが正常に通信できない問題未解決
     ros::NodeHandle srv_nh;
     geometry_msgs::PoseStamped fro_msg;
-    ros::ServiceServer srv = srv_nh.advertiseService("TURN", &robot_moving::srvCB, &RM);
+    ros::ServiceServer srv = srv_nh.advertiseService("/TURN", &robot_moving::srvCB, &RM);
     ROS_INFO_STREAM("service is ready.");
     while(ros::ok() && !RM.turn_fin)
     {

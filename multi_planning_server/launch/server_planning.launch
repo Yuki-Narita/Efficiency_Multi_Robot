@@ -1,0 +1,7 @@
+<launch>
+    <group ns="multi_planning_server">
+        <node pkg="multi_planning_server" type="Frontier_Search" name="Frontier_Search" />
+        <!-- <node pkg="multi_planning_server" type="server_planning" name="server_planning"/> -->
+        <node pkg="multi_planning_server" type="server_planning" name="server_planning"  output="screen"/>
+    </group>
+</launch>

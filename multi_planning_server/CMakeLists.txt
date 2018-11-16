@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(Multi_Planning_Server)
+project(multi_planning_server)
 set(CMAKE_BUILD_TYPE Debug)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
@@ -107,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES Multi_Planning_Server
+#  LIBRARIES multi_planning_server
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
@@ -125,7 +125,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/Multi_Planning_Server.cpp
+#   src/${PROJECT_NAME}/multi_planning_server.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -136,7 +136,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/Multi_Planning_Server_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/multi_planning_server.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -193,7 +193,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_Multi_Planning_Server.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_multi_planning_server.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
