@@ -1,7 +1,5 @@
 #include <multi_robot/robot_moving.hpp>
 
-
-
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "robot_moving");

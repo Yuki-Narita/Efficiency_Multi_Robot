@@ -18,6 +18,7 @@ int main(int argc, char **argv)
     std_srvs::Empty srv;
     while(ros::ok())
     {
+        
         std::cout << "test1" << std::endl;
         bool result = firstturnClient.call(srv);
         std::cout << "test2" << std::endl;
