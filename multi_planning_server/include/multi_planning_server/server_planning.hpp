@@ -9,7 +9,7 @@
 #include<std_msgs/String.h>
 
 bool arrive_flag;
-int robot_num;
+int robot_num;//ロボットの個数、台数。
 int fro_num;
 
 class server_planning
@@ -26,6 +26,8 @@ class server_planning
     void map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg);
     bool map_isinput(void);
     void turn_fin_CB(const std_msgs::String::ConstPtr &turn_msg);
+    void robot_sort1(const std::vector<string>& robot_name, const );//ロボットの個数がフロンティアセルの個数より多い時の振り分け
+    void robot_sort2(void);//ロボットの個数がフロンティアセルの個数より少ない時の振り分け
 
     ros::Subscriber path_sub;
     ros::Subscriber Target_sub;
@@ -48,8 +50,8 @@ server_planning::server_planning()
     nh.setCallbackQueue(&queueS);
     fn.setCallbackQueue(&queueF);
     mn.setCallbackQueue(&queueM);
-    path_sub=nh.subscribe("/VoronoiPlanner/path", 100, &server_planning::OptimalTarget,this);
-    Target_sub=fn.subscribe("/Frontier_Target", 100, &server_planning::getfrontier,this);
+    path_sub=nh.subscribe("/VoronoiPlanner/path", 100, &server_planning::OptimalTarget, this);
+    Target_sub=fn.subscribe("/Frontier_Target", 100, &server_planning::getfrontier, this);
     map_sub=mn.subscribe("/map", 100, &server_planning::map_input, this);
 }
 server_planning::~server_planning()
@@ -91,5 +93,14 @@ void server_planning::turn_fin_CB(const std_msgs::String::ConstPtr &msg)
     std::cout << "turn_fin_CB was done." << std::endl;
 }
 
+void server_planning::robot_sort1(void)
+{
+
+}
+
+void server_planning::robot_sort2(void)
+{
+
+}
 
 #endif
