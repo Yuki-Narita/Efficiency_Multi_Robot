@@ -42,11 +42,13 @@ int main(int argc, char **argv)
         if(RM.Target_flag && !RM.arrive_flag)
         {
             //目的地まで移動する。
+            RM.unreach_target();
             std::cout << "ターゲットがあってかつ到着していない。" << std::endl;
             //ifで目的地に到着したかを判定する。
         }
         else if(RM.Target_flag && RM.arrive_flag)
         {
+            RM.reached_target();
             std::cout << "ターゲットがあってかつ到着した。" << std::endl;
         }
         else

@@ -24,14 +24,14 @@ class robot_moving
         ~robot_moving();
 
         void firstturn(void);
-        void numbering(void);
         void setgoal(const geometry_msgs::PoseStamped::ConstPtr &pose);
-        void running(void);
         void arrive(const nav_msgs::Odometry::ConstPtr &odom);
         bool setflag(void);
         void resetflag(void);
         bool srvCB(std_srvs::Empty::Request &req,std_srvs::Empty::Response &res);
         void firstturnCB(const std_msgs::String::ConstPtr& msg);
+        void unreach_target(void);
+        void reached_target(void);
 
         ros::Subscriber sub;
         ros::Publisher pub;
@@ -47,7 +47,7 @@ class robot_moving
 robot_moving::robot_moving()
 {
     nh.setCallbackQueue(&queueR);
-    sub=nh.subscribe("/move_base_simple/goal", 100, &robot_moving::setgoal, this);
+    sub=nh.subscribe("move_base_simple/goal", 100, &robot_moving::setgoal, this);
 }
 robot_moving::~robot_moving()
 {}
@@ -86,22 +86,14 @@ void robot_moving::firstturn(void)//ロボットが最初に２回転して地�
         }
         cmd_pub.publish(empty);
 }
-/*
-void robot_moving::numbering(void)//ロボットにIDをナンバリングする関数。
-{}
-*/
+
 void robot_moving::setgoal(const geometry_msgs::PoseStamped::ConstPtr &pose)//Frontier_Searchノードからパブリッシュされる目的地の座標を受け取る関数。
 {
     Target.header = pose -> header;
     Target.pose = pose -> pose;    
     Target_flag = true;
 }
-/*
-void robot_moving::running(void)
-{
-    //ロボットの探査動作を書く。
-}
-*/
+
 void robot_moving::arrive(const nav_msgs::Odometry::ConstPtr &odom)//ロボットが目的地に到着したかどうかを判定する関数。
 {
     nav_msgs::Odometry Odom;
@@ -147,6 +139,14 @@ void robot_moving::firstturnCB(const std_msgs::String::ConstPtr& msg)
     ROS_INFO_STREAM("robot_moving:  turning complete");
     pub_msg.data = "turning done.";
     turn_fin = true;
+}
+void robot_moving::unreach_target(void)
+{
+    
+}
+void robot_moving::reached_target(void)
+{
+
 }
 
 

@@ -4,6 +4,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <vector>
 #include <geometry_msgs/PoseArray.h>
+#include <geomerry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <iostream>
 
@@ -16,7 +17,8 @@ class Frontier_Search
         ros::NodeHandle fp;
         ros::Subscriber subff;
         ros::Publisher pub0;
-		geometry_msgs::PoseArray Pose[];
+		geometry_msgs::PoseStamped Pose;
+		geometry_msgs::PoseArray poseArray[];
 
         //vis用
 		ros::Publisher vis_pub;		
@@ -292,16 +294,20 @@ void Frontier_Search::Search_Obstacle(void)
 
 void Frontier_Search::Publish_Data(void)
 {
-	Pose.header.stamp = ros::Time::now();
-	Pose.header.frame_id = "map";
-	Pose.poses.position.x = fro_x;
-	Pose.poses.position.y = fro_y;
-	Pose.poses.orientation.x = 0.0;
-	Pose.poses.orientation.y = 0.0;
-	Pose.poses.orientation.z = 0.0;
-	Pose.poses.orientation.w = 1.0;
-	//std::cout << "fro_x:" << Pose.pose.position.x << "fro_y:" << Pose.pose.position.y << std::endl;
-	pub0.publish(Pose);
+	for(int i=0; i<fro_num; i++)
+	{
+		Pose.header.stamp = ros::Time::now();
+		Pose.header.frame_id = "map";
+		Pose.pose.position.x = fro_x[i];
+		Pose.pose.position.y = fro_y[i];
+		Pose.pose.orientation.x = 0.0;
+		Pose.pose.orientation.y = 0.0;
+		Pose.pose.orientation.z = 0.0;
+		Pose.pose.orientation.w = 1.0;
+		//std::cout << "fro_x:" << Pose.pose.position.x << "fro_y:" << Pose.pose.position.y << std::endl;
+		poseArray.push_back(Pose);
+	}
+	pub0.publish(poseArray);
 
 }
 
