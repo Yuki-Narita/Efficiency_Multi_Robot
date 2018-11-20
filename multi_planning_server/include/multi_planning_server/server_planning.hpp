@@ -16,8 +16,8 @@ int fro_num;
 nav_msgs::OccupancyGrid map_data;//大元のmapトピックのマップ情報
 uint32_t map_width;
 uint32_t map_height;
-int8_t **Voronoi_grid_array;
-int8_t **Frontier_array;
+uint8_t **Voronoi_grid_array;
+uint8_t **Frontier_array;
 float map_resolution;
 
 class server_planning
@@ -30,7 +30,7 @@ class server_planning
     server_planning();
     ~server_planning();
     void OptimalTarget(const geometry_msgs::PoseStamped::ConstPtr &Target);
-    void frontier_target_CB(const std::vector<geometry_msgs::PoseArray> &Target);//FSノードのターゲットの情報をTARGETに格納してここで使えるようにする。
+    void frontier_target_CB(const geometry_msgs::PoseArray &Target);//FSノードのターゲットの情報をTARGETに格納してここで使えるようにする。
     void frontier_target2map(const std::vector<geometry_msgs::PoseStamped>& Target);//TARGETをマップ配列に入れなおす。（ボロノイ配列と比較できるようにするために）
     void map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg);//mapの更新を監視する
     bool map_isinput(void);//mapが更新したことを返す関数
@@ -62,7 +62,7 @@ class server_planning
     
     bool isinput;
     bool turn_fin;
-    std::vector<geometry_msgs::PoseStamped> Extraction_Target;
+    std::vector<geometry_msgs::PoseStamped> Extraction_Target_m;
 };
 
 server_planning::server_planning()
@@ -86,8 +86,16 @@ void server_planning::odomCB(const nav_msgs::Odometry::ConstPtr& odom_msg)
     robot_odom = *odom_msg;
 }
 
-void server_planning::frontier_target_CB(const std::vector<geometry_msgs::PoseArray> &Target)
+void server_planning::frontier_target_CB(const geometry_msgs::PoseArray &Target)
 {    
+    TARGET.resize(Target.poses.size());
+    for(int i = 0; i < Target.poses.size(); i++)
+    {
+        TARGET[i].header = Target.header;
+        TARGET[i].pose = Target.poses[i];
+    }
+
+    /*
     int i = 0;
     for(std::vector<int>::const_iterator it = Target.begin(); it != Target.end(); ++it)
     {
@@ -97,22 +105,27 @@ void server_planning::frontier_target_CB(const std::vector<geometry_msgs::PoseAr
     }
     std::cout << "server_plannning getfrontier is done." << std::endl;
     frontier_target2map(TARGET);
+    */
 }
 void frontier_target2map(const std::vector<geometry_msgs::PoseStamped>& Target)
 {
     //Frontier_map用の配列を確保
-    Frontier_array = new int8_t*[map_width];
-    for(int8_t p = 0; p < map_height; p++)
+    Frontier_array = new uint8_t*[map_width];
+    for(uint8_t p = 0; p < map_height; p++)
     {
-        Frontier_array[p] = new int8_t[map_height];
+        Frontier_array[p] = new uint8_t[map_height];
     }
     //Targetの型をfloatからintにする（map配列に座標を変換してその中の値を参照するため）
     std::vector<int> frontier_x;
     std::vector<int> frontier_y;
+
+    frontier_x.resize(Target.size());
+    frontier_y.resize(Target.size());
+
     for(int i = 0; i < Target.size(); i++)
     {
-        frontier_x[i] = (int)Target[i]+1;
-        frontier_y[i] = (int)Target[i]+1;
+        frontier_x[i] = (int)Target[i].pose.position.x+1;
+        frontier_y[i] = (int)Target[i].pose.position.y+1;
     }
     //frontier_mapにフロンティアの座標のあるセルに1を格納する。なかったら０を代入する。
     for(int x = 0; x < map_width; x++)
@@ -171,19 +184,20 @@ void server_planning::robot_sort2(const std::vector<string>& robot_name, const g
 */
 void server_planning::Extraction_Target(void)
 {
+    geometry_msgs::PoseStamped t_target;
     for(uint32_t i=0; i < map_width; i++)
     {
         for(uint32_t j=0; j < map_height; j++)
         {
             if(Voronoi_grid_array[i][j] == −128 && Frontier_array[i][j] == 1)
             {
-                TARGET.pose.position.x = i;
-                TARGET.pose.position.y = j;
-                TARGET.pose.orientation.x = 0;
-                TARGET.pose.orientation.y = 0;
-                TARGET.pose.orientation.z = 0;
-                TARGET.pose.orientation.w = 1;
-                Extraction_Target.push_back(TARGET);
+                t_target.pose.position.x = i;
+                t_target.pose.position.y = j;
+                t_target.pose.orientation.x = 0;
+                t_target.pose.orientation.y = 0;
+                t_target.pose.orientation.z = 0;
+                t_target.pose.orientation.w = 1;
+                Extraction_Target_m.push_back(t_target);
                 std::cout << "Extracted target." << std::endl;
             }
         }
@@ -193,17 +207,17 @@ void server_planning::Extraction_Target(void)
 void voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr& voronoi_map_msg)
 {
     //ボロノイグリッド格納用の配列を確保
-    Voronoi_grid_array = new uint32_t*[voronoi_map_msg->info.width];
-    for(uint32_t p = 0; p < voronoi_map_msg->info.width; p++)
+    Voronoi_grid_array = new uint8_t*[voronoi_map_msg->info.width];
+    for(uint8_t p = 0; p < voronoi_map_msg->info.width; p++)
     {
-        Voronoi_grid_array[p] = new uint32_t[voronoi_map_msg->info.height];
+        Voronoi_grid_array[p] = new uint8_t[voronoi_map_msg->info.height];
     }
     //ボロノイグリッドを配列に格納
-    for(uint32_t i = 0; i < voronoi_map_msg->info.width; i++)
+    for(uint8_t i = 0; i < voronoi_map_msg->info.width; i++)
     {
-        for(uint32_t j = 0; j < voronoi_map_msg->info.height; j++)
+        for(uint8_t j = 0; j < voronoi_map_msg->info.height; j++)
         {
-            Voronoi_grid_array[i][j]=voronoi_map_msg->data;
+            Voronoi_grid_array[i][j]=voronoi_map_msg->data[voronoi_map_msg->info.width*j+i];
         }
     }
 }
