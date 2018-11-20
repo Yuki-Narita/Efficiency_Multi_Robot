@@ -4,6 +4,7 @@
 #include<ros/ros.h>
 #include<ros/callback_queue.h>
 #include<geometry_msgs/PoseStamped.h>
+#include<geometry_msgs/PoseArray.h>
 #include<nav_msgs/OccupancyGrid.h>
 #include<nav_msgs/Odometry.h>
 #include<std_srvs/Empty.h>
@@ -15,6 +16,8 @@ int fro_num;
 nav_msgs::OccupancyGrid map_data;//大元のmapトピックのマップ情報
 uint32_t map_width;
 uint32_t map_height;
+int8_t **Voronoi_grid_array;
+int8_t **Frontier_array;
 float map_resolution;
 
 class server_planning
@@ -27,14 +30,14 @@ class server_planning
     server_planning();
     ~server_planning();
     void OptimalTarget(const geometry_msgs::PoseStamped::ConstPtr &Target);
-    void frontier_target_CB(const geometry_msgs::PoseStamped::ConstPtr &Target);//FSノードのターゲットの情報をTARGETに格納してここで使えるようにする。
+    void frontier_target_CB(const std::vector<geometry_msgs::PoseArray> &Target);//FSノードのターゲットの情報をTARGETに格納してここで使えるようにする。
     void frontier_target2map(const std::vector<geometry_msgs::PoseStamped>& Target);//TARGETをマップ配列に入れなおす。（ボロノイ配列と比較できるようにするために）
     void map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg);//mapの更新を監視する
     bool map_isinput(void);//mapが更新したことを返す関数
     void voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr& voronoi_map_msg);
     void turn_fin_CB(const std_msgs::String::ConstPtr &turn_msg);//最初にロボットを回す関数
-    void robot_sort1(const std::vector<string>& robot_name, const geometry_msgs::PoseArray& Frontier);//ロボットの個数がフロンティアセルの個数より多い時の振り分け
-    void robot_sort2(const std::vector<string>& robot_name, const geometry_msgs::PoseArray& Frontier);//ロボットの個数がフロンティアセルの個数より少ない時の振り分け    
+    //void robot_sort1(const std::vector<string>& robot_name, const geometry_msgs::PoseArray& Frontier);//ロボットの個数がフロンティアセルの個数より多い時の振り分け
+    //void robot_sort2(const std::vector<string>& robot_name, const geometry_msgs::PoseArray& Frontier);//ロボットの個数がフロンティアセルの個数より少ない時の振り分け    
     void odomCB(const nav_msgs::Odometry::ConstPtr &odom_msg);//オドメトリを取得する関数
     void Extraction_Target(void);//ボロノイグリッドと重なるフロンティア座標を抽出する関数。
 
@@ -59,8 +62,6 @@ class server_planning
     
     bool isinput;
     bool turn_fin;
-    int8_t **Voronoi_grid_array;
-    int8_t **Frontier_array;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target;
 };
 
@@ -76,7 +77,7 @@ server_planning::server_planning()
     voronoi_grid_sub=voronoi_map_nh.subscribe("/move_base/VoronoiPLanner/grid", 100, &server_planning::voronoi_map_CB, this);
     Target_sub=fn.subscribe("/Frontier_Target", 100, &server_planning::frontier_target_CB, this);
     map_sub=mn.subscribe("/map", 100, &server_planning::map_input, this);
-    odom_sub=on.subscribe("/odom", 100, &server_planning:odomCB, this);
+    odom_sub=on.subscribe("/odom", 100, &server_planning::odomCB, this);
 }
 server_planning::~server_planning()
 {}
@@ -85,33 +86,51 @@ void server_planning::odomCB(const nav_msgs::Odometry::ConstPtr& odom_msg)
     robot_odom = *odom_msg;
 }
 
-void server_planning::frontier_target_CB(const geometry_msgs::PoseArray::ConstPtr &Target)
+void server_planning::frontier_target_CB(const std::vector<geometry_msgs::PoseArray> &Target)
 {    
     int i = 0;
-    for(std::vector<int>::const_iterator it = Target->data.begin(); it != Target->data.end(); ++it)
+    for(std::vector<int>::const_iterator it = Target.begin(); it != Target.end(); ++it)
     {
         TARGET[i] = *it;
         std::cout << "frontier_target_CB TARGET:" << TARGET[i] << std::endl;
         i++;
     }
-    std:cout << "server_plannning getfrontier is done." << std::endl;
+    std::cout << "server_plannning getfrontier is done." << std::endl;
     frontier_target2map(TARGET);
 }
 void frontier_target2map(const std::vector<geometry_msgs::PoseStamped>& Target)
 {
     //Frontier_map用の配列を確保
-    Frontier_array = new uint32_t*[map_width];
-    for(uint32_t p = 0; p < map_height; p++)
+    Frontier_array = new int8_t*[map_width];
+    for(int8_t p = 0; p < map_height; p++)
     {
-        Frontier_array[p] = new uint32_t[map_height];
+        Frontier_array[p] = new int8_t[map_height];
     }
     //Targetの型をfloatからintにする（map配列に座標を変換してその中の値を参照するため）
-    std::vector<float> frontier_x;
-    std::vector<float> frontier_y;
+    std::vector<int> frontier_x;
+    std::vector<int> frontier_y;
     for(int i = 0; i < Target.size(); i++)
     {
-        frontier_x[i] = Target->pose.position.x;
-        frontier_y[i] = Target->pose.position.y;
+        frontier_x[i] = (int)Target[i]+1;
+        frontier_y[i] = (int)Target[i]+1;
+    }
+    //frontier_mapにフロンティアの座標のあるセルに1を格納する。なかったら０を代入する。
+    for(int x = 0; x < map_width; x++)
+    {
+        for(int y = 0; y < map_height; y++)
+        {
+            for(int i = 0; i < Target.size(); i++)
+            {
+                if(x == frontier_x[i] && y == frontier_y[i])
+                {
+                    Frontier_array[x][y] = 1;
+                }
+                else
+                {
+                    Frontier_array[x][y] = 0;
+                }
+            }
+        }
     }
 }
 void server_planning::OptimalTarget(const geometry_msgs::PoseStamped::ConstPtr &Target)
@@ -150,18 +169,22 @@ void server_planning::robot_sort2(const std::vector<string>& robot_name, const g
 
 }
 */
-void server::planning::Extraction_Target(void)
+void server_planning::Extraction_Target(void)
 {
     for(uint32_t i=0; i < map_width; i++)
     {
         for(uint32_t j=0; j < map_height; j++)
         {
-            for(auto itr = TARGET.begin(); itr !=TARGET.end(); itr++ )
+            if(Voronoi_grid_array[i][j] == −128 && Frontier_array[i][j] == 1)
             {
-                if(Voronoi_grid_array[i][j]==−128 && *itr.data == 1)
-                {
-                    Extraction_Target.push_back(TARGET);
-                }
+                TARGET.pose.position.x = i;
+                TARGET.pose.position.y = j;
+                TARGET.pose.orientation.x = 0;
+                TARGET.pose.orientation.y = 0;
+                TARGET.pose.orientation.z = 0;
+                TARGET.pose.orientation.w = 1;
+                Extraction_Target.push_back(TARGET);
+                std::cout << "Extracted target." << std::endl;
             }
         }
     }

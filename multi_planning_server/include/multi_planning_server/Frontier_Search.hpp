@@ -2,10 +2,10 @@
 #include <ros/callback_queue.h>
 #include <ros/node_handle.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <vector>
 #include <geometry_msgs/PoseArray.h>
-#include <geomerry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
+#include <vector>
 #include <iostream>
 
 
@@ -305,10 +305,9 @@ void Frontier_Search::Publish_Data(void)
 		Pose.pose.orientation.z = 0.0;
 		Pose.pose.orientation.w = 1.0;
 		//std::cout << "fro_x:" << Pose.pose.position.x << "fro_y:" << Pose.pose.position.y << std::endl;
-		poseArray.push_back(Pose);
+		poseArray[i] = Pose;
 	}
 	pub0.publish(poseArray);
-
 }
 
 void Frontier_Search::Publish_marker(void)
