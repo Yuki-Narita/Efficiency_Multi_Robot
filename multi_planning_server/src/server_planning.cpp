@@ -56,6 +56,12 @@ int main(int argc, char **argv)
             SP.queueM.callOne(ros::WallDuration(1));
             if(SP.map_isinput())
             {
+                //Frontier_Searchからの座標を取得
+                SP.queueF.callOne(ros::WallDuration(1));
+                //ロボットのオドメトリを取得
+                SP.queueO.callOne(ros::WallDuration(1));
+                //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
+                SP.Extraction_Target()
                 std::cout << "check if" << std::endl;
                 if(robot_num >= fro_num)
                 {

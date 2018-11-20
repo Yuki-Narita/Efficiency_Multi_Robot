@@ -90,7 +90,7 @@ class Frontier_Search
 		{
 			ff.setCallbackQueue(&queueF);
     		subff = ff.subscribe("/map", 1, &Frontier_Search::FSinput, this);
-    		pub0 = fp.advertise<geometry_msgs::PoseArray>("/Frontire_Target", 1);
+    		pub0 = fp.advertise<geometry_msgs::PoseArray>("/Frontier_Target", 1);
 			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker", 1);
 			std::cout << "search_len :" << search_len << std::endl;
 			std::cout << "robot_diameter:" << robot_diameter << std::endl;
