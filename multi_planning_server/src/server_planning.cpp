@@ -61,7 +61,7 @@ int main(int argc, char **argv)
                 //ロボットのオドメトリを取得
                 SP.queueO.callOne(ros::WallDuration(1));
                 //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
-                SP.Extraction_Target()
+                SP.Extraction_Target();
                 std::cout << "check if" << std::endl;
                 if(robot_num >= fro_num)
                 {
