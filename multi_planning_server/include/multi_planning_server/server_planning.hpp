@@ -206,7 +206,7 @@ void server_planning::Extraction_Target(void)
     }
 }
 
-void voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr& voronoi_map_msg)
+void server_planning::voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr& voronoi_map_msg)
 {
     //ボロノイグリッド格納用の配列を確保
     Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
