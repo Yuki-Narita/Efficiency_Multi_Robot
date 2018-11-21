@@ -10,13 +10,14 @@
 #include<std_srvs/Empty.h>
 #include<std_msgs/String.h>
 
-bool arrive_flag;
+bool arrive_flag;//ロボットが目的地に到着したかを判定する用
 int robot_num;//ロボットの個数、台数。
-int fro_num;
+int fro_num;//フロンティア領域の個数。
+int given_robot_num;//launchの引数として与えられたロボットの台数。
 nav_msgs::OccupancyGrid map_data;//大元のmapトピックのマップ情報
 uint32_t map_width;
 uint32_t map_height;
-uint8_t **Voronoi_grid_array;
+int **Voronoi_grid_array;
 uint8_t **Frontier_array;
 float map_resolution;
 
@@ -40,6 +41,7 @@ class server_planning
     //void robot_sort2(const std::vector<string>& robot_name, const geometry_msgs::PoseArray& Frontier);//ロボットの個数がフロンティアセルの個数より少ない時の振り分け    
     void odomCB(const nav_msgs::Odometry::ConstPtr &odom_msg);//オドメトリを取得する関数
     void Extraction_Target(void);//ボロノイグリッドと重なるフロンティア座標を抽出する関数。
+    void SP_Memory_release(void);//動的に確保したメモリを開放
 
     ros::Subscriber path_sub;
     ros::Subscriber Target_sub;
@@ -74,10 +76,10 @@ server_planning::server_planning()
     voronoi_map_nh.setCallbackQueue(&voronoi_map_queue);
 
     path_sub=nh.subscribe("/move_base/VoronoiPlanner/path", 100, &server_planning::OptimalTarget, this);
-    voronoi_grid_sub=voronoi_map_nh.subscribe("/move_base/VoronoiPLanner/grid", 100, &server_planning::voronoi_map_CB, this);
     Target_sub=fn.subscribe("/Frontier_Target", 100, &server_planning::frontier_target_CB, this);
     map_sub=mn.subscribe("/map", 100, &server_planning::map_input, this);
     odom_sub=on.subscribe("/odom", 100, &server_planning::odomCB, this);
+    voronoi_grid_sub=voronoi_map_nh.subscribe("/move_base/VoronoiPLanner/grid", 100, &server_planning::voronoi_map_CB, this);
 }
 server_planning::~server_planning()
 {}
@@ -88,6 +90,7 @@ void server_planning::odomCB(const nav_msgs::Odometry::ConstPtr& odom_msg)
 
 void server_planning::frontier_target_CB(const geometry_msgs::PoseArray &Target)
 {    
+    fro_num = Target.poses.size();
     TARGET.resize(Target.poses.size());
     for(int i = 0; i < Target.poses.size(); i++)
     {
@@ -149,7 +152,6 @@ void frontier_target2map(const std::vector<geometry_msgs::PoseStamped>& Target)
 void server_planning::OptimalTarget(const geometry_msgs::PoseStamped::ConstPtr &Target)
 {
     //ロボットの自己位置と各目標地点とのパスを取得してロボットの自己位置に対する最も近い
-    //
 }
 void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 {
@@ -175,8 +177,8 @@ void server_planning::robot_sort1(const std::vector<string>& robot_name, const g
 {
     std::vector<string> sort1_robot_name = *robot_name;
     geometry_msgs::PoseArray sort1_Frontier = *Frontier;
-}
 
+}
 void server_planning::robot_sort2(const std::vector<string>& robot_name, const geometry_msgs::PoseArray& Frontier)
 {
 
@@ -189,7 +191,7 @@ void server_planning::Extraction_Target(void)
     {
         for(uint32_t j=0; j < map_height; j++)
         {
-            if(Voronoi_grid_array[i][j] == −128 && Frontier_array[i][j] == 1)
+            if(Voronoi_grid_array[i][j] == -128 && Frontier_array[i][j] == 1)
             {
                 t_target.pose.position.x = i;
                 t_target.pose.position.y = j;
@@ -207,10 +209,10 @@ void server_planning::Extraction_Target(void)
 void voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr& voronoi_map_msg)
 {
     //ボロノイグリッド格納用の配列を確保
-    Voronoi_grid_array = new uint8_t*[voronoi_map_msg->info.width];
+    Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
     for(uint8_t p = 0; p < voronoi_map_msg->info.width; p++)
     {
-        Voronoi_grid_array[p] = new uint8_t[voronoi_map_msg->info.height];
+        Voronoi_grid_array[p] = new int [voronoi_map_msg->info.height];
     }
     //ボロノイグリッドを配列に格納
     for(uint8_t i = 0; i < voronoi_map_msg->info.width; i++)
@@ -222,4 +224,17 @@ void voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr& voronoi_map_msg)
     }
 }
 
+void server_planning::SP_Memory_release(void)
+{
+    for(uint32_t p = 0; p < map_width; p++)
+    {
+        delete[] Voronoi_grid_array[p];
+    }
+    delete[] Voronoi_grid_array;
+    for(uint32_t p = 0; p < map_width; p++)
+    {
+        delete[] Frontier_array[p];
+    }
+    delete[] Frontier_array;
+}
 #endif

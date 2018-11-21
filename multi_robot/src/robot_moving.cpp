@@ -3,18 +3,25 @@
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "robot_moving");
-
+    int param_robot_num;
     robot_moving RM;
     ros::NodeHandle nh;
     ros::NodeHandle turn_nh;
+    ros::NodeHandle param_update;
 
     ros::SubscribeOptions turn_req_option;
     ros::Subscriber turn_req_sub;
     ros::Publisher turn_fin_pub;
 
-//サービスが正常に通信できない問題未解決
     ros::NodeHandle srv_nh;
     geometry_msgs::PoseStamped fro_msg;
+
+    //multi_planning_serverのパラメータにあるロボットの数を更新する。
+    param_update.getParam("/multi_planning_server/robot_num",param_robot_num);
+    param_robot_num++;
+    param_update.setParam("/multi_planning_server/robot_num",param_robot_num);
+    
+    //ロボットからサーバーへサービスを配布する。
     ros::ServiceServer srv = srv_nh.advertiseService("/TURN", &robot_moving::srvCB, &RM);
     ROS_INFO_STREAM("service is ready.");
     while(ros::ok() && !RM.turn_fin)

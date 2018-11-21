@@ -1,5 +1,8 @@
 <launch>
+<arg name="given_robot_num" default="2">
     <group ns="multi_planning_server">
+        <param name="robot_num" value="0"/>
+        <param name="given_robot_num" value="$(arg given_robot_num)" >
         <node pkg="multi_planning_server" type="Frontier_Search" name="Frontier_Search" />
         <!-- <node pkg="multi_planning_server" type="server_planning" name="server_planning"/> -->
         <node pkg="multi_planning_server" type="server_planning" name="server_planning"  output="screen"/>

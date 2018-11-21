@@ -5,37 +5,50 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "server_planning");
     ros::Publisher pub2FS;
     ros::Subscriber subFS;
-    ros::NodeHandle turn_nh;//firstturn用のノードハンドル。
-    ros::Publisher turn_req_pub;//
+    
+    //firstturn用
+    ros::NodeHandle turn_nh;
+    ros::Publisher turn_req_pub;
     ros::Subscriber turn_sub;
+
+    //パラメータサーバー用
+    ros::NodeHandle robot_num_nh;
+    
     server_planning SP;
 
+
     //serverとつながっているロボットの個数とロボットの名前を取得
+    /*
     ros::NodeHandle get_param_nh("~");
     std::vector<char>  robot_name;
     while(ros::ok())
     {
-        get_param_nh.getParam("robot_name", robot_name);//ここでパラメータの名前のところの数字をループで繰り上げる処理をして各ロボットのパラメータにアクセスしたい。
+        //get_param_nh.getParam("robot_name", robot_name);//ここでパラメータの名前のところの数字をループで繰り上げる処理をして各ロボットのパラメータにアクセスしたい。
     }
-    robot_num = robot_name.size();
+    */
+   //ロボットの個数をパラメータサーバーから取得
+    robot_num = robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
+    given_robot_num = robot_num_nh.getParam("/multi_planning_server/given_robot_num",given_robot_num);
+
 
     // robot_movingからの初期回転の完了を検知する。
     ros::NodeHandle srv_nh;
     ros::ServiceClient firstturnClient = srv_nh.serviceClient<std_srvs::Empty>("/TURN");
     std_srvs::Empty srv;
-    while(ros::ok())
+    if(robot_num == given_robot_num)
     {
-        std::cout << "test1" << std::endl;
-        bool result = firstturnClient.call(srv);
-        std::cout << "test2" << std::endl;
-        if(result)
+        while(ros::ok())
         {
-          ROS_INFO_STREAM("complete");
-          break;
-        }
-        else
-        {
-            ROS_INFO_STREAM("false");
+            bool result = firstturnClient.call(srv);
+            if(result)
+            {
+              ROS_INFO_STREAM("complete");
+              break;
+            }
+            else
+            {
+                ROS_INFO_STREAM("false");
+            }
         }
     }
 /*
@@ -51,48 +64,52 @@ int main(int argc, char **argv)
 */
 
 //メインループ
-        while(ros::ok())
+    while(ros::ok())
+    {
+        SP.queueM.callOne(ros::WallDuration(1));
+        if(SP.map_isinput())
         {
-            SP.queueM.callOne(ros::WallDuration(1));
-            if(SP.map_isinput())
+            //Frontier_Searchからの座標を取得
+            SP.queueF.callOne(ros::WallDuration(1));
+            std::cout << "queueF.callOne was done." << std::endl;
+            //ロボットのオドメトリを取得
+            SP.queueO.callOne(ros::WallDuration(1));
+            std::cout << "queueO.callOne was done." << std::endl;
+            //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
+            SP.Extraction_Target();
+            std::cout << "Extraction_Target was done." << std::endl;
+            //それぞれのロボットの自己位置とゴールを結ぶパスを取得する。
+            //
+            if(robot_num >= fro_num)
             {
-                //Frontier_Searchからの座標を取得
-                SP.queueF.callOne(ros::WallDuration(1));
-                //ロボットのオドメトリを取得
-                SP.queueO.callOne(ros::WallDuration(1));
-                //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
-                SP.Extraction_Target();
-                std::cout << "check if" << std::endl;
-                if(robot_num >= fro_num)
-                {
-                    //ロボットの数の方がフロンティアセルより多いのでロボットの振り分けをする。
-                    SP.robot_sort1();
-                    std::cout << "check if 2" << std::endl;
-                }
-                else if(robot_num < fro_num)
-                {
-                    //ロボットの数の方がフロンティアセルより少ない時でのロボットの振り分け方。
-                    SP.robot_sort2();
-                    std::cout << "check if 3" << std::endl;
-                }
-                else
-                {
-                    //ROS_ERROR_STREAM("フロンティアセルとロボット数の条件分岐でのエラー。");
-                    ROS_ERROR_STREAM("if error");
-                }
+                //ロボットの数の方がフロンティアセルより多いのでロボットの振り分けをする。
+                //SP.robot_sort1();
+                std::cout << "check if 2" << std::endl;
             }
-            else if(!SP.map_isinput())
+            else if(robot_num < fro_num)
             {
-                //ROS_FATAL_STREAM("Planning_Serveでマップの更新なし。");
-                ROS_FATAL_STREAM("Planning_Serve not map-refresh");
+                //ロボットの数の方がフロンティアセルより少ない時でのロボットの振り分け方。
+                //SP.robot_sort2();
+                std::cout << "check if 3" << std::endl;
             }
             else
             {
-                //ROS_ERROR_STREAM("Planning_Serverでマップの更新に失敗。");
-                ROS_ERROR_STREAM("Planning_Server miss map-refresh");
+                //ROS_ERROR_STREAM("フロンティアセルとロボット数の条件分岐でのエラー。");
+                ROS_ERROR_STREAM("if error");
             }
         }
-
-    
+        else if(!SP.map_isinput())
+        {
+            //ROS_FATAL_STREAM("Planning_Serveでマップの更新なし。");
+            ROS_FATAL_STREAM("Planning_Serve not map-refresh");
+        }
+        else
+        {
+            //ROS_ERROR_STREAM("Planning_Serverでマップの更新に失敗。");
+            ROS_ERROR_STREAM("Planning_Server miss map-refresh");
+            return 0;
+        }
+        SP.SP_Memory_release();
+    }
     return 0;
 }
