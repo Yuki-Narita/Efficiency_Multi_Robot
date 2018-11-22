@@ -30,6 +30,7 @@ int main(int argc, char **argv)
     //ロボットからサーバーへサービスを配布する。
     std::string srv_name;
     srv_name = "/robot"+param_robot_str+"/TURN";
+    std::cout << "service srv_name : " << srv_name << std::endl;
     ros::ServiceServer srv = srv_nh.advertiseService(srv_name, &robot_moving::srvCB, &RM);
     ROS_INFO_STREAM("service is ready.");
     while(ros::ok() && !RM.turn_fin)
@@ -53,11 +54,13 @@ int main(int argc, char **argv)
         {
             //目的地まで移動する。            
             std::cout << "ターゲットがあってかつ到着していない。" << std::endl;
+            sleep(1);
             //ifで目的地に到着したかを判定する。
         }
         else if(RM.Target_flag && RM.arrive_flag)
         {
             std::cout << "ターゲットがあってかつ到着した。" << std::endl;
+            sleep(1);
         }
         else
         {

@@ -13,7 +13,7 @@ int main(int argc, char **argv)
 
     //パラメータサーバー用
     ros::NodeHandle robot_num_nh;
-    
+    ros::ServiceClient firstturnClient;
     server_planning SP;
 
 
@@ -41,27 +41,36 @@ int main(int argc, char **argv)
         sleep(1);
     }
     int count=0;
-    std::ostringstream oss;
+    bool flag =false;
     std::string tmp_name;
     std::string srv_name;
     std::cout << "test2" << std::endl;
     while(ros::ok() && !(count == robot_num))
     {
         std::cout << "test3" << std::endl;
-        oss << count+1;
-        tmp_name = oss.str();
-        srv_name = "/robot"+tmp_name+"/TURN";
-        std::cout << "service name : " << srv_name << std::endl;
-        ros::ServiceClient firstturnClient = srv_nh.serviceClient<std_srvs::Empty>(srv_name);
+        if(!flag)
+        {
+            std::ostringstream oss;
+            oss << count+1;
+            tmp_name = oss.str();
+            srv_name = "/robot"+tmp_name+"/TURN";
+            std::cout << "service name : " << srv_name << std::endl;
+            firstturnClient = srv_nh.serviceClient<std_srvs::Empty>(srv_name);
+            flag = true;
+        }
         bool result = firstturnClient.call(srv);
         if(result)
         {
           ROS_INFO_STREAM("complete" << tmp_name);
           count++;
+          flag = false;
+          tmp_name = "";
+          ROS_INFO_STREAM("initialized : [" << tmp_name << "]");
         }
         else
         {
             ROS_INFO_STREAM("false");
+            sleep(1);
         }
     }
 /*
