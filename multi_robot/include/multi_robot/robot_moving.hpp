@@ -8,6 +8,8 @@
 #include<nav_msgs/Odometry.h>
 #include<std_msgs/String.h>
 #include<std_srvs/Empty.h>
+#include<sstream>
+#include<string>
 
 std::string robot_name;
 int robot_number;
@@ -73,7 +75,7 @@ void robot_moving::firstturn(void)//ロボットが最初に２回転して地�
         empty = move_cmd;
 
         move_cmd.angular.z = angular_speed;
-        cmd_pub = cn.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop",5);
+        cmd_pub = cn.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop",5);
 
         int i=0;
         std::cout << "探査開始" << std::endl;

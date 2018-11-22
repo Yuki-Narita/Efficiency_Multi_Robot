@@ -9,6 +9,8 @@
 #include<nav_msgs/Odometry.h>
 #include<std_srvs/Empty.h>
 #include<std_msgs/String.h>
+#include<sstream>
+#include<string>
 
 bool arrive_flag;//ロボットが目的地に到着したかを判定する用
 int robot_num;//ロボットの個数、台数。

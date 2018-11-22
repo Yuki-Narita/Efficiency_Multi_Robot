@@ -27,28 +27,40 @@ int main(int argc, char **argv)
     }
     */
    //ロボットの個数をパラメータサーバーから取得
-    robot_num = robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
-    given_robot_num = robot_num_nh.getParam("/multi_planning_server/given_robot_num",given_robot_num);
-
+    robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
+    robot_num_nh.getParam("/multi_planning_server/given_robot_num",given_robot_num);
 
     // robot_movingからの初期回転の完了を検知する。
     ros::NodeHandle srv_nh;
-    ros::ServiceClient firstturnClient = srv_nh.serviceClient<std_srvs::Empty>("/TURN");
     std_srvs::Empty srv;
-    if(robot_num == given_robot_num)
+    std::cout << "test1" << std::endl;
+    while(ros::ok() && !(robot_num == given_robot_num))
     {
-        while(ros::ok())
+        robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
+        std::cout << "robot_num: " << robot_num << " given_robot_num: "<< given_robot_num<< std::endl;
+        sleep(1);
+    }
+    int count=0;
+    std::ostringstream oss;
+    std::string tmp_name;
+    std::string srv_name;
+    std::cout << "test2" << std::endl;
+    while(ros::ok() && !(count == robot_num))
+    {
+        std::cout << "test3" << std::endl;
+        oss << count+1;
+        tmp_name = oss.str().c_str();
+        srv_name = "/robot"+tmp_name+"/TURN";
+        ros::ServiceClient firstturnClient = srv_nh.serviceClient<std_srvs::Empty>(srv_name);
+        bool result = firstturnClient.call(srv);
+        if(result)
         {
-            bool result = firstturnClient.call(srv);
-            if(result)
-            {
-              ROS_INFO_STREAM("complete");
-              break;
-            }
-            else
-            {
-                ROS_INFO_STREAM("false");
-            }
+          ROS_INFO_STREAM("complete");
+          count++;
+        }
+        else
+        {
+            ROS_INFO_STREAM("false");
         }
     }
 /*

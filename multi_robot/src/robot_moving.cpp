@@ -16,13 +16,21 @@ int main(int argc, char **argv)
     ros::NodeHandle srv_nh;
     geometry_msgs::PoseStamped fro_msg;
 
+    //intからStrへの変換用
+    std::ostringstream oss;
+    std::string param_robot_str;
+
     //multi_planning_serverのパラメータにあるロボットの数を更新する。
     param_update.getParam("/multi_planning_server/robot_num",param_robot_num);
     param_robot_num++;
+    oss << param_robot_num;
+    param_robot_str = oss.str().c_str();
     param_update.setParam("/multi_planning_server/robot_num",param_robot_num);
     
     //ロボットからサーバーへサービスを配布する。
-    ros::ServiceServer srv = srv_nh.advertiseService("/TURN", &robot_moving::srvCB, &RM);
+    std::string srv_name;
+    srv_name = "/robot"+param_robot_str+"/TURN";
+    ros::ServiceServer srv = srv_nh.advertiseService(srv_name, &robot_moving::srvCB, &RM);
     ROS_INFO_STREAM("service is ready.");
     while(ros::ok() && !RM.turn_fin)
     {
