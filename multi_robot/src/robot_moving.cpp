@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     param_update.getParam("/multi_planning_server/robot_num",param_robot_num);
     param_robot_num++;
     oss << param_robot_num;
-    param_robot_str = oss.str().c_str();
+    param_robot_str = oss.str();
     param_update.setParam("/multi_planning_server/robot_num",param_robot_num);
     
     //ロボットからサーバーへサービスを配布する。

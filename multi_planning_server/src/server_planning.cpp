@@ -49,13 +49,14 @@ int main(int argc, char **argv)
     {
         std::cout << "test3" << std::endl;
         oss << count+1;
-        tmp_name = oss.str().c_str();
+        tmp_name = oss.str();
         srv_name = "/robot"+tmp_name+"/TURN";
+        std::cout << "service name : " << srv_name << std::endl;
         ros::ServiceClient firstturnClient = srv_nh.serviceClient<std_srvs::Empty>(srv_name);
         bool result = firstturnClient.call(srv);
         if(result)
         {
-          ROS_INFO_STREAM("complete");
+          ROS_INFO_STREAM("complete" << tmp_name);
           count++;
         }
         else
