@@ -8,6 +8,8 @@
 #include <vector>
 #include <iostream>
 
+using std::cout;
+using std::endl;
 
 class Frontier_Search
 {
@@ -89,7 +91,7 @@ class Frontier_Search
     	search_width(3)
 		{
 			ff.setCallbackQueue(&queueF);
-    		subff = ff.subscribe("/map", 1, &Frontier_Search::FSinput, this);
+    		subff = ff.subscribe("/server/grid_map_merge/merge_map", 1, &Frontier_Search::FSinput, this);
     		pub0 = fp.advertise<geometry_msgs::PoseArray>("/Frontier_Target", 1);
 			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker", 1);
 			std::cout << "search_len :" << search_len << std::endl;
@@ -171,7 +173,7 @@ void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid& msg)
       			map_array[j][i] = msg.data[k];
 				if(map_array[j][i]!=0 && map_array[j][i]!=100 && map_array[j][i]!=-1)
 				{	
-					std::cout << "exception:" << map_array[j][i] << std::endl;		
+					//std::cout << "exception:" << map_array[j][i] << std::endl;		
 				}
 				frontier_flag[j][i] = 0;
 				point[j][i] = 0;
@@ -222,11 +224,11 @@ void Frontier_Search::Search_Obstacle(void)
 	std::cout << "start:未探査領域周辺の障害物を検索" << std::endl;
 	std::cout << "pre_fronum:" << pre_fronum << std::endl;
     for(k=0;k<pre_fronum;k++){
-		std::cout << "pre_frox[k]:" << pre_frox[k] << std::endl;
+		//std::cout << "pre_frox[k]:" << pre_frox[k] << std::endl;
 		if(pre_frox[k]-half_sq < 0){
-			std::cout << "half_leftx:" << half_leftx << std::endl;
+			//std::cout << "half_leftx:" << half_leftx << std::endl;
 			half_leftx = pre_frox[k];
-			std::cout << "half_leftx:" << half_leftx << std::endl;
+			//std::cout << "half_leftx:" << half_leftx << std::endl;
 		}
 		else{
 			half_leftx = half_sq;
@@ -257,13 +259,13 @@ void Frontier_Search::Search_Obstacle(void)
 		}
 		
 		frontier_sum = 0;
-		std::cout << "previent frontier_sum:" << frontier_sum << std::endl;
+		//std::cout << "previent frontier_sum:" << frontier_sum << std::endl;
 		for(i=(pre_froy[k]-half_topy);i<(pre_froy[k]+half_bottomy+1);i++){
 			for(j=(pre_frox[k]-half_leftx);j<(pre_frox[k]+half_rightx+1);j++){
 				frontier_sum+=point[j][i];
 			}
 		}
-		std::cout << "after frontier_sum:" << frontier_sum << std::endl;
+		//std::cout << "after frontier_sum:" << frontier_sum << std::endl;
 
 		if(frontier_sum>100){
 			point[pre_frox[k]][pre_froy[k]] = 0;
@@ -305,7 +307,7 @@ void Frontier_Search::Publish_Data(void)
 		Pose.orientation.z = 0.0;
 		Pose.orientation.w = 1.0;
 		//std::cout << "fro_x:" << Pose.pose.position.x << "fro_y:" << Pose.pose.position.y << std::endl;
-		poseArray.poses[i] = Pose;
+		poseArray.poses.push_back(Pose);
 	}
 	pub0.publish(poseArray);
 }
@@ -379,9 +381,9 @@ void Frontier_Search::Vatical_Search(void)
         		else if(map_array[j][i] == -1 && map_array[j][i+1] == 0){
 				frontier_flag[j][i+1] = 1;	
 			}
-			std::cout << frontier_flag[j][i];
+			//std::cout << frontier_flag[j][i];
     		}
-			std::cout << std::endl;
+			//std::cout << std::endl;
   	}
 
 	std::cout << "end  :縦方向で境界を検索" << std::endl;
@@ -495,7 +497,7 @@ void Frontier_Search::Add_Obstacle(void)
     		for(i=0;i<y;i++){
       			if(map_array[j][i] == 100){
 	       			point[j][i] = 100;
-			}
+				}
     		}
   	}
 	std::cout << "end  :障害物情報を追加" << std::endl;
