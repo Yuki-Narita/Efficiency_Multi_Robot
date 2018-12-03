@@ -16,6 +16,7 @@ int main(int argc, char **argv)
     ros::ServiceClient firstturnClient;
     server_planning SP;
 
+
    //ロボットの個数をパラメータサーバーから取得
     robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
     robot_num_nh.getParam("/multi_planning_server/given_robot_num",given_robot_num);
@@ -95,6 +96,9 @@ cout << "test roop" << endl;
             //ロボットのオドメトリを取得
             SP.queueO.callOne(ros::WallDuration(1));
             std::cout << "queueO.callOne was done." << std::endl;
+            SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
+            
+
             //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
             cout << "voronoi_map_update:" << SP.voronoi_map_update << endl;
             if(SP.voronoi_map_update)

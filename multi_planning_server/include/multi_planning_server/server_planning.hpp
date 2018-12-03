@@ -5,6 +5,7 @@
 #include<ros/callback_queue.h>
 #include<geometry_msgs/PoseStamped.h>
 #include<geometry_msgs/PoseArray.h>
+#include<nav_msgs/Path.h>
 #include<nav_msgs/OccupancyGrid.h>
 #include<nav_msgs/Odometry.h>
 #include<std_srvs/Empty.h>
@@ -15,6 +16,8 @@
 using std::cout;
 using std::endl;
 
+bool path_flag1=false;
+bool path_flag2=false;
 bool arrive_flag;//ロボットが目的地に到着したかを判定する用
 int robot_num;//ロボットの個数、台数。
 int fro_num;//フロンティア領域の個数。
@@ -31,6 +34,8 @@ class server_planning
     private:
     nav_msgs::Odometry robot_odom;
     std::vector<geometry_msgs::PoseStamped> TARGET;
+    std::vector<nav_msgs::Path> robot1path;
+    std::vector<nav_msgs::Path> robot2path;
 
     public:
     server_planning();
@@ -47,19 +52,25 @@ class server_planning
     void odomCB(const nav_msgs::Odometry::ConstPtr &odom_msg);//オドメトリを取得する関数
     void Extraction_Target(void);//ボロノイグリッドと重なるフロンティア座標を抽出する関数。
     void SP_Memory_release(void);//動的に確保したメモリを開放
+    void FT2robots(void);//フロンティア領域を各ロボットに送信する用の関数。
+    void robot1path(const  nav_msgs::Path::ConstPtr &path_msg);
+    void robot2path(const nav_msgs::Path::ConstPtr &path_msg);
 
-    ros::Subscriber path_sub;
+    ros::Subscriber path_sub1;
+    ros::Subscriber path_sub2;
     ros::Subscriber Target_sub;
     ros::Subscriber map_sub;
     ros::Subscriber odom_sub;
     ros::Subscriber voronoi_grid_sub;
     ros::Publisher pub;
-    ros::NodeHandle nh;
+    ros::NodeHandle nh1;
+    ros::NodeHandle nh2;
     ros::NodeHandle fn;
     ros::NodeHandle mn;
     ros::NodeHandle on;
     ros::NodeHandle voronoi_map_nh;
-    ros::CallbackQueue queueS;
+    ros::CallbackQueue queue1;
+    ros::CallbackQueue queue2;
     ros::CallbackQueue queueF;
     ros::CallbackQueue queueM;
     ros::CallbackQueue queueO;
@@ -71,21 +82,25 @@ class server_planning
     bool turn_fin;
     bool voronoi_map_update=false;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target_m;
+    std::string tmp_name;
 };
 
 server_planning::server_planning()
 {
-    nh.setCallbackQueue(&queueS);
+    nh1.setCallbackQueue(&queue1);
+    nh2.setCallbackQueue(&queue2);
     fn.setCallbackQueue(&queueF);
     mn.setCallbackQueue(&queueM);
     on.setCallbackQueue(&queueO);
     voronoi_map_nh.setCallbackQueue(&voronoi_map_queue);
 
-    path_sub=nh.subscribe("/move_base/VoronoiPlanner/path", 100, &server_planning::OptimalTarget, this);
+
+    path_sub1=nh1.subscribe("/robot1/move_base/VoronoiPlanner/plan", 100, &server_planning::robot1path, this);
+    path_sub2=nh2.subscribe("/robot2/move_base/VoronoiPlanner/plan", 100, &server_planning::robot2path, this);
     Target_sub=fn.subscribe("/Frontier_Target", 100, &server_planning::frontier_target_CB, this);
     map_sub=mn.subscribe("/server/grid_map_merge/merge_map", 100, &server_planning::map_input, this);
     odom_sub=on.subscribe("/odom", 100, &server_planning::odomCB, this);
-    voronoi_grid_sub=voronoi_map_nh.subscribe("/move_base/VoronoiPLanner/grid", 100, &server_planning::voronoi_map_CB, this);
+    voronoi_grid_sub=voronoi_map_nh.subscribe("/move_base/VoronoiPlanner/grid", 100, &server_planning::voronoi_map_CB, this);
 }
 server_planning::~server_planning()
 {}
@@ -180,18 +195,17 @@ void server_planning::turn_fin_CB(const std_msgs::String::ConstPtr &msg)
     turn_fin = true;
     std::cout << "turn_fin_CB was done." << std::endl;
 }
-/*
-void server_planning::robot_sort1(const std::vector<string>& robot_name, const geometry_msgs::PoseArray& Frontier)
-{
-    std::vector<string> sort1_robot_name = *robot_name;
-    geometry_msgs::PoseArray sort1_Frontier = *Frontier;
 
-}
-void server_planning::robot_sort2(const std::vector<string>& robot_name, const geometry_msgs::PoseArray& Frontier)
+void server_planning::robot1path(const nav_msgs::Path::ConstPtr &path_msg)
 {
-
+    robot1path.push_back(*path_msg);
+    path_flag1 = true;
 }
-*/
+void server_planning::robot2path(const nav_msgs::Path::ConstPtr &path_msg)
+{
+    robot2path.push_back(*path_msg);
+    path_flag2 = true;
+}
 void server_planning::Extraction_Target(void)
 {
     geometry_msgs::PoseStamped t_target;
@@ -250,4 +264,30 @@ void server_planning::SP_Memory_release(void)
     }
     delete[] Frontier_array;
 }
+
+void server_planning::FT2robots(void)
+{
+    ros::NodeHandle t2r1;
+    ros::NodeHandle t2r2;
+    ros::Publisher target2robot1;
+    ros::Publisher target2robot2;
+    target2robot1 = t2r1.advertise<geometry_msgs::PoseStamped>("/robot1/move_base_simple/goal",100);
+    target2robot2 = t2r2.advertise<geometry_msgs::PoseStamped>("/robot2/move_base_simple/goal",100);
+    robot1path.resize(TARGET.size());
+    robot2path.resize(TARGET.size());
+    for(int i = 0; i < TARGET.size(); i++)
+    {
+        target2robot1.publish(TARGET[i]);
+        while(!path_flag1){}
+        path_flag1 = false;        
+    }   
+    for(int i = 0; i < TARGET.size(); i++)
+    {
+        target2robot2.publish(TARGET[i]);
+        while(!path_flag2){}
+        path_flag1 = false;        
+    }
+}
+
+
 #endif
