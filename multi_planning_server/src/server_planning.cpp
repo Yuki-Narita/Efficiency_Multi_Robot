@@ -16,7 +16,7 @@ int main(int argc, char **argv)
     ros::ServiceClient firstturnClient;
     server_planning SP;
 
-/*
+    /*
    //ロボットの個数をパラメータサーバーから取得
     robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
     robot_num_nh.getParam("/multi_planning_server/given_robot_num",given_robot_num);
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     }
     */
 
-/*
+    /*
     turn_req_pub = turn_nh.advertise<std_msgs::String>("/firstturn",1);
     SP.pub_msg.data = "turn now";
     while(ros::ok() && !SP.turn_fin)
@@ -81,31 +81,47 @@ int main(int argc, char **argv)
         std::cout << SP.sub_msg << std::endl;
         ros::spinOnce();
     }
-*/
-
-cout << "test roop" << endl;
-//メインループ
+    */
+   cout << "************SERVER_PLANINNG START************" << endl;
+    while(!SP.odom_queue_flag)
+    {
+        SP.robot1_odom_queue.callOne(ros::WallDuration(1));
+    }   
+    SP.odom_queue_flag=false;
+    while(!SP.odom_queue_flag)
+    {
+        SP.robot2_odom_queue.callOne(ros::WallDuration(1));
+    }
+    while(!SP.r1_voronoi_map_update)
+    {
+        SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));
+    }
+    while(!SP.r2_voronoi_map_update)
+    {
+        SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));
+    }
+    
+    //メインループ
     while(ros::ok())
     {
         SP.queueM.callOne(ros::WallDuration(1));
-        cout << "test" << endl;
         if(SP.map_isinput())
         {
             //Frontier_Searchからの座標を取得
-            SP.queueF.callOne(ros::WallDuration(1));
-            std::cout << "queueF.callOne was done." << std::endl;
-            //ロボットのオドメトリを取得
-            SP.queueO.callOne(ros::WallDuration(1));
-            std::cout << "queueO.callOne was done." << std::endl;
-            SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
-            
-
-            //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
-            cout << "voronoi_map_update:" << SP.voronoi_map_update << endl;
-            if(SP.voronoi_map_update)
+            while(!SP.queueF_judge)
             {
-                cout << "voronoi_map_update" << endl;
+                SP.queueF.callOne(ros::WallDuration(1));
+            }
+            SP.queueF_judge = false;
+            std::cout << "queueF.callOne was done." << std::endl;
+            //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
+            cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
+            cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
+            if(SP.r1_voronoi_map_update && SP.r2_voronoi_map_update)
+            {
+                cout << "r1 and r2 voronoi_map_update" << endl;
                 SP.Extraction_Target();
+                SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
                 std::cout << "Extraction_Target was done." << std::endl;
             }
             //それぞれのロボットの自己位置とゴールを結ぶパスを取得する。
@@ -140,6 +156,9 @@ cout << "test roop" << endl;
             return 0;
         }
         SP.SP_Memory_release();
+        cout << "loop ended" << endl;
+        cout << "\n" << endl;
     }
+    cout << "************SERVER_PLANINNG END************" << endl;
     return 0;
 }

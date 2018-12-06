@@ -20,7 +20,7 @@ class Frontier_Search
         ros::Subscriber subff;
         ros::Publisher pub0;
 		geometry_msgs::Pose Pose;
-		geometry_msgs::PoseArray poseArray;
+		
 
         //vis用
 		ros::Publisher vis_pub;		
@@ -91,10 +91,10 @@ class Frontier_Search
     	search_width(3)
 		{
 			ff.setCallbackQueue(&queueF);
-    		//subff = ff.subscribe("/server/grid_map_merge/merge_map", 1, &Frontier_Search::FSinput, this); //購読先がグローバルマップ
-			subff = ff.subscribe("/robot2/move_base/local_costmap/costmap", 1, &Frontier_Search::FSinput, this); //購読先がコストマップ
+    		subff = ff.subscribe("/server/grid_map_merge/merge_map", 1, &Frontier_Search::FSinput, this); //購読先がグローバルマップ
+			//subff = ff.subscribe("/robot2/move_base/local_costmap/costmap", 1, &Frontier_Search::FSinput, this); //購読先がコストマップ
     		pub0 = fp.advertise<geometry_msgs::PoseArray>("/Frontier_Target", 1);
-			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker", 1);
+			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker/Frontier", 1);
 			std::cout << "search_len :" << search_len << std::endl;
 			std::cout << "robot_diameter:" << robot_diameter << std::endl;
 			std::cout << "pre_fronum:" << pre_fronum << std::endl;
@@ -297,6 +297,7 @@ void Frontier_Search::Search_Obstacle(void)
 
 void Frontier_Search::Publish_Data(void)
 {
+	geometry_msgs::PoseArray poseArray;
 	for(int i=0; i<fro_num; i++)
 	{
 		poseArray.header.stamp = ros::Time::now();
@@ -311,12 +312,13 @@ void Frontier_Search::Publish_Data(void)
 		poseArray.poses.push_back(Pose);
 	}
 	pub0.publish(poseArray);
+	cout << "pose size: " << poseArray.poses.size() << endl;
 }
 
 void Frontier_Search::Publish_marker(void)
 {
         uint32_t shape = visualization_msgs::Marker::CUBE_LIST;
-        marker.header.frame_id = "map";
+        marker.header.frame_id = "/server/merge_map";
         marker.header.stamp = ros::Time::now();
         marker.ns = "Frontier";
         marker.id = 0;

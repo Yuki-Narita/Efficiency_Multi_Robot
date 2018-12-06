@@ -19,27 +19,16 @@ int main(int argc, char **argv)
         {
             //ここにＦｒｏｎｔｉｅｒ＿Ｓｅａｒｃｈの一連の処理に必要な関数を書く
             FS.Storage();
-            cout << "test3" << endl;
             FS.Map_Init(FS.msg);//ここで配列にマップデータを格納する。
-            cout << "test4" << endl;
             FS.Side_Search();
-            cout << "test5" << endl;
             FS.Vatical_Search();
-            cout << "test6" << endl;
             FS.Side_Continuity_Search();
-            cout << "test7" << endl;
             FS.Vatical_Continuity_Search();
-            cout << "test8" << endl;
             FS.Add_Obstacle();
-            cout << "test9" << endl;
             FS.Search_Obstacle();
-            cout << "test10" << endl;
             FS.Publish_Data();
-            cout << "test11" << endl;
             FS.Publish_marker();
-            cout << "test12" << endl;
             FS.Memory_release();
-            cout << "test13" << endl;
         }
         else
         {
