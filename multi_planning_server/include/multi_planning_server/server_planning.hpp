@@ -39,6 +39,7 @@ int **r2_enhanced_Voronoi_grid_array;
 int **Frontier_array;
 int **costmap_array;
 float map_resolution;
+geometry_msgs::Pose map_origin;
 
 class server_planning
 {
@@ -91,6 +92,8 @@ class server_planning
     ros::Publisher pub;
     ros::Publisher target2robot1;
     ros::Publisher target2robot2;
+    ros::Publisher test_map_pub1;
+    ros::Publisher test_map_pub2;
     ros::NodeHandle nh1;
     ros::NodeHandle nh2;
     ros::NodeHandle fn;
@@ -102,6 +105,8 @@ class server_planning
     ros::NodeHandle costmap_nh;
     ros::NodeHandle robot1_odom_nh;
     ros::NodeHandle robot2_odom_nh;
+    ros::NodeHandle test_map_nh1;
+    ros::NodeHandle test_map_nh2;
 
     ros::CallbackQueue queue1;
     ros::CallbackQueue queue2;
@@ -141,6 +146,8 @@ server_planning::server_planning()
     r2_voronoi_map_nh.setCallbackQueue(&r2_voronoi_map_queue);
     costmap_nh.setCallbackQueue(&costmap_queue);
     vis_pub = vis_nh.advertise<visualization_msgs::Marker>("/vis_marker/Extraction_Target", 1);
+    test_map_pub1 = test_map_nh1.advertise<nav_msgs::OccupancyGrid>("/test_map1", 100);
+    test_map_pub2 = test_map_nh2.advertise<nav_msgs::OccupancyGrid>("/test_map2", 100);
     target2robot1 = t2r1.advertise<geometry_msgs::PoseStamped>("/robot1/move_base_simple/goal",100);
     target2robot2 = t2r2.advertise<geometry_msgs::PoseStamped>("/robot2/move_base_simple/goal",100);
     path_sub1=nh1.subscribe("/robot1/move_base/VoronoiPlanner/plan", 100, &server_planning::robot1path, this);
@@ -209,14 +216,15 @@ void server_planning::frontier_target2map(const std::vector<geometry_msgs::PoseS
         frontier_y[i] = (int)Target[i].pose.position.y+1;
     }
     //frontier_mapにフロンティアの座標のあるセルに1を格納する。なかったら０を代入する。
-    for(int x = 0; x < map_width; x++)
+    for(int y = 0; y < map_height; y++)
     {
-        for(int y = 0; y < map_height; y++)
+        for(int x = 0; x < map_width; x++)
         {
             for(int i = 0; i < Target.size(); i++)
             {
                 if(x == frontier_x[i] && y == frontier_y[i])
                 {
+                    cout << "test" << endl;
                     Frontier_array[x][y] = 1;
                 }
                 else
@@ -241,6 +249,7 @@ void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     map_width = msg->info.width;
     map_height = msg->info.height;
     map_resolution = msg -> info.resolution;
+    map_origin = msg ->info.origin;
     isinput = true;
     ROS_INFO_STREAM("Map is updated");
     cout << "map_width :"<< map_width << "map_height :" << map_height << endl;
@@ -302,7 +311,9 @@ void server_planning::Extraction_Target(void)
 {
     cout << "*** Extraction_Target started. ***" << endl;
     enhance_voronoi_map();
+    cout << "test" << endl;
     geometry_msgs::PoseStamped t_target;
+    cout << "test" << endl;
     for(int i=0; i < map_width; i++)
     {
         for(int j=0; j < map_height; j++)
@@ -321,9 +332,10 @@ void server_planning::Extraction_Target(void)
             }
         }
     }
-    for(int i=0; i < map_width; i++)
+    cout << "test" << endl;
+    for(int j=0; j < map_height; j++)
     {
-        for(int j=0; j < map_height; j++)
+        for(int i=0; i < map_width; i++)
         {
             if(r2_enhanced_Voronoi_grid_array[i][j] == -128 && Frontier_array[i][j] == 1)
             {
@@ -338,7 +350,9 @@ void server_planning::Extraction_Target(void)
                 cout << "r2 Extracted target size: " << Extraction_Target_r2.size() << endl;
             }
         }
+        cout << endl;
     }
+    cout << "test" << endl;
     cout << "*** Extraction_Target is done. ***\n" << endl;
 }
 
@@ -354,9 +368,9 @@ void server_planning::r1_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr&
             r1_Voronoi_grid_array[p] = new int [voronoi_map_msg->info.height];
         }
     //ボロノイグリッドを配列に格納
-    for(int i = 0; i < voronoi_map_msg->info.width; i++)
+    for(int j = 0; j < voronoi_map_msg->info.height; j++)
     {
-        for(int j = 0; j < voronoi_map_msg->info.height; j++)
+        for(int i = 0; i < voronoi_map_msg->info.width; i++)
         {
             r1_Voronoi_grid_array[i][j]=voronoi_map_msg->data[voronoi_map_msg->info.width*j+i];
         }
@@ -373,13 +387,13 @@ void server_planning::r2_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr&
     //ボロノイグリッド格納用の配列を確保
     r2_Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
     for(int p = 0; p < voronoi_map_msg->info.width; p++)
-        {
-            r2_Voronoi_grid_array[p] = new int [voronoi_map_msg->info.height];
-        }
-    //ボロノイグリッドを配列に格納
-    for(int i = 0; i < voronoi_map_msg->info.width; i++)
     {
-        for(int j = 0; j < voronoi_map_msg->info.height; j++)
+        r2_Voronoi_grid_array[p] = new int [voronoi_map_msg->info.height];
+    }
+    //ボロノイグリッドを配列に格納
+    for(int j = 0; j < voronoi_map_msg->info.height; j++)
+    {
+        for(int i = 0; i < voronoi_map_msg->info.width; i++)
         {
             r2_Voronoi_grid_array[i][j]=voronoi_map_msg->data[voronoi_map_msg->info.width*j+i];
         }
@@ -521,6 +535,22 @@ void server_planning::create_robot2_grid(void)
 
 void server_planning::enhance_voronoi_map(void)
 {
+    cout << "enhance_voronoi_map start. " << endl;
+    nav_msgs::OccupancyGrid test_map1;
+    nav_msgs::OccupancyGrid test_map2;
+    test_map1.header.frame_id = "/server/map";
+    test_map1.header.stamp = ros::Time::now();
+    test_map1.info.resolution = map_resolution;
+    test_map1.info.height = map_height;
+    test_map1.info.width = map_width;
+    test_map1.info.origin = map_origin;
+    test_map2.header.frame_id = "/server/map";
+    test_map2.header.stamp = ros::Time::now();
+    test_map2.info.resolution = map_resolution;
+    test_map2.info.height = map_height;
+    test_map2.info.width = map_width;
+    test_map2.info.origin = map_origin;
+
     //Frontierとの比較用に拡張させたボロノイ配列を作成する。
     r1_enhanced_Voronoi_grid_array = new int*[map_width];
     for(int p = 0; p < map_width; p++)
@@ -528,21 +558,30 @@ void server_planning::enhance_voronoi_map(void)
         r1_enhanced_Voronoi_grid_array[p] = new int[map_height];
     }
     //拡張したボロノイ配列を0で初期化する。
-    for(int x = 0; x < map_width; x++)
+    for(int y = 0; y < map_height; y++)
     {
-        for(int y = 0; y < map_height; y++)
+        for(int x = 0; x < map_width; x++)
         {
             r1_enhanced_Voronoi_grid_array[x][y] = 0;
         }
     }
     //拡張したボロノイ配列にトピックから受け取ったボロノイ図の情報を反映する。
-    for(int x = 0; x < r1_map_width; x++)
+    for(int y = 0; y < r1_map_height; y++)
     {
-        for(int y = 0; y < r1_map_height; y++)
+        for(int x = 0; x < r1_map_width; x++)
         {
             r1_enhanced_Voronoi_grid_array[x][y] = r1_Voronoi_grid_array[x][y];
         }
     }
+    for (int y = 0; y < map_height; y++)
+    {
+        for(int x = 0; x < map_width; x++)
+        {
+            test_map1.data.push_back(r1_enhanced_Voronoi_grid_array[x][y]);
+        }
+    }
+    cout << "data size: " << test_map1.data.size() << endl;
+    test_map_pub1.publish(test_map1);
 
     r2_enhanced_Voronoi_grid_array = new int*[map_width];
     for(int p = 0; p < map_width; p++)
@@ -550,25 +589,45 @@ void server_planning::enhance_voronoi_map(void)
         r2_enhanced_Voronoi_grid_array[p] = new int[map_height];
     }
     //拡張したボロノイ配列を0で初期化する。
-    for(int x = 0; x < map_width; x++)
+    for(int y = 0; y < map_height; y++)
     {
-        for(int y = 0; y < map_height; y++)
+        for(int x = 0; x < map_width; x++)
         {
             r2_enhanced_Voronoi_grid_array[x][y] = 0;
         }
     }
     //拡張したボロノイ配列にトピックから受け取ったボロノイ図の情報を反映する。
-    for(int x = 0; x < r2_map_width; x++)
+    for(int y = 0; y < r2_map_height; y++)
     {
-        for(int y = 0; y < r2_map_height; y++)
+        for(int x = 0; x < r2_map_width; x++)
         {
             r2_enhanced_Voronoi_grid_array[x][y] = r2_Voronoi_grid_array[x][y];
         }
     }
+    for (int y = 0; y < map_height; y++)
+    {
+        for(int x = 0; x < map_width; x++)
+        {
+            test_map2.data.push_back(r2_enhanced_Voronoi_grid_array[x][y]);
+        }
+    }
+    test_map_pub2.publish(test_map2);
+    /*
+    for(int x = 0; x < map_width; x++)
+    {
+        for (int y = 0; y < map_height; y++)
+        {
+            cout << r1_enhanced_Voronoi_grid_array[x][y] << " ";
+        }
+        cout << endl;
+    }
+    */
+    cout << "enhance_voronoi_map is done. " << endl;
 }
 
 void server_planning::Publish_marker(void)
 {
+    cout << "publish_marker start." << endl;
     uint32_t shape = visualization_msgs::Marker::CUBE_LIST;
         marker.header.frame_id = "/server/merge_map";
         marker.header.stamp = ros::Time::now();
@@ -601,7 +660,9 @@ void server_planning::Publish_marker(void)
 			p.y = Extraction_Target_r2[i].pose.position.y;
 			marker.points.push_back(p);
 		}
+        cout << "marker size: " << marker.points.size() << endl;
 		vis_pub.publish(marker);
+        cout << "publish_marker is done." << endl;
 }
 
 #endif

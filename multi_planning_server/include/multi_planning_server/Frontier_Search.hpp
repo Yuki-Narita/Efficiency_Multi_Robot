@@ -170,16 +170,16 @@ void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid& msg)
 	std::cout << "start:地図データを配列に格納" << std::endl;
 	std::cout << "X:" << x << "Y:" << y << "K:" << k << std::endl; 
 	for(i=0;i<y;i++){
-    		for(j=0;j<x;j++){
-      			map_array[j][i] = msg.data[k];
-				if(map_array[j][i]!=0 && map_array[j][i]!=100 && map_array[j][i]!=-1)
-				{	
-					//std::cout << "exception:" << map_array[j][i] << std::endl;		
-				}
-				frontier_flag[j][i] = 0;
-				point[j][i] = 0;
-      			k++;
-    		}
+    	for(j=0;j<x;j++){
+      		map_array[j][i] = msg.data[k];
+			if(map_array[j][i]!=0 && map_array[j][i]!=100 && map_array[j][i]!=-1)
+			{	
+				//std::cout << "exception:" << map_array[j][i] << std::endl;		
+			}
+			frontier_flag[j][i] = 0;
+			point[j][i] = 0;
+      		k++;
+    	}
   	}
 	
 	std::cout << "end  :地図データを配列に格納" << std::endl;

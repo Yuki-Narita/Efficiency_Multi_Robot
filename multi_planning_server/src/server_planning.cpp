@@ -88,16 +88,18 @@ int main(int argc, char **argv)
         SP.robot1_odom_queue.callOne(ros::WallDuration(1));
     }   
     SP.odom_queue_flag=false;
+    while(!SP.r1_voronoi_map_update)
+    {
+        cout << "r1_voronoi_map_update waiting" << endl;
+        SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));
+    }
     while(!SP.odom_queue_flag)
     {
         SP.robot2_odom_queue.callOne(ros::WallDuration(1));
     }
-    while(!SP.r1_voronoi_map_update)
-    {
-        SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));
-    }
     while(!SP.r2_voronoi_map_update)
     {
+        cout << "r2_voronoi_map_update waiting " << endl;
         SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));
     }
     
@@ -121,6 +123,7 @@ int main(int argc, char **argv)
             {
                 cout << "r1 and r2 voronoi_map_update" << endl;
                 SP.Extraction_Target();
+                SP.Publish_marker();
                 SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
                 std::cout << "Extraction_Target was done." << std::endl;
             }
