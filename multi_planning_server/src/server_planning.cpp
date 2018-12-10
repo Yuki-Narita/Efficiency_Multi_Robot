@@ -82,7 +82,7 @@ int main(int argc, char **argv)
         ros::spinOnce();
     }
     */
-   cout << "************SERVER_PLANINNG START************" << endl;
+   cout << "--------------------【SERVER_PLANINNG START】--------------------" << endl;
     while(!SP.odom_queue_flag)
     {
         SP.robot1_odom_queue.callOne(ros::WallDuration(1));
