@@ -29,6 +29,7 @@ int main(int argc, char **argv)
             FS.Publish_Data();
             FS.Publish_marker();
             FS.Memory_release();
+            FS.Clear_Vector();
         }
         else
         {

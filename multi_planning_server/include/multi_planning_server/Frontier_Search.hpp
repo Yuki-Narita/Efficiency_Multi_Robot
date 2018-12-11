@@ -25,7 +25,7 @@ class Frontier_Search
         //vis用
 		ros::Publisher vis_pub;		
 		ros::NodeHandle vis;
-		visualization_msgs::Marker marker;
+		//visualization_msgs::Marker marker;
         //
 
         //const nav_msgs::MapMetaData msg.info;
@@ -118,10 +118,27 @@ class Frontier_Search
         void Publish_Data(void);//計算した結果をパブリッシャー用に変換する関数。
 		void Publish_marker(void);
 		void Memory_release(void);
+		void Clear_Vector(void);
 };
 
 Frontier_Search::~Frontier_Search()
 {}
+
+void Frontier_Search::Clear_Vector(void)
+{
+	pre_frox.clear();
+	pre_frox.shrink_to_fit();
+
+	pre_froy.clear();
+	pre_froy.shrink_to_fit();
+
+	fro_x.clear();
+	fro_x.shrink_to_fit();
+
+	fro_y.clear();
+	fro_y.shrink_to_fit();
+}
+
 void Frontier_Search::Memory_release(void)
 {
 		for(int p=0;p<x;p++){
@@ -317,33 +334,34 @@ void Frontier_Search::Publish_Data(void)
 
 void Frontier_Search::Publish_marker(void)
 {
-        uint32_t shape = visualization_msgs::Marker::CUBE_LIST;
-        marker.header.frame_id = "/server/merge_map";
-        marker.header.stamp = ros::Time::now();
-        marker.ns = "Frontier";
-        marker.id = 0;
-        marker.type = shape;
-        marker.action = visualization_msgs::Marker::ADD;
-		
-        marker.lifetime = ros::Duration();
+	visualization_msgs::Marker marker;
+	uint32_t shape = visualization_msgs::Marker::CUBE_LIST;
+	marker.header.frame_id = "/server/merge_map";
+	marker.header.stamp = ros::Time::now();
+	marker.ns = "Frontier";
+	marker.id = 0;
+	marker.type = shape;
+	marker.action = visualization_msgs::Marker::ADD;
+	
+	marker.lifetime = ros::Duration();
 
-        marker.scale.x = 0.05;
-        marker.scale.y = 0.05;
-        marker.scale.z = 0.05;
-        
-        marker.color.r = 0.0f;
-        marker.color.g = 1.0f;
-        marker.color.b = 0.0f;
-        marker.color.a = 1.0f;
+	marker.scale.x = 0.05;
+	marker.scale.y = 0.05;
+	marker.scale.z = 0.05;
+	
+	marker.color.r = 0.0f;
+	marker.color.g = 1.0f;
+	marker.color.b = 0.0f;
+	marker.color.a = 1.0f;
 
-		geometry_msgs::Point p;
-		for(int i=0; i < fro_num;i++)
-		{
-			p.x = fro_x[i];
-			p.y = fro_y[i];
-			marker.points.push_back(p);
-		}
-		vis_pub.publish(marker);
+	geometry_msgs::Point p;
+	for(int i=0; i < fro_num;i++)
+	{
+		p.x = fro_x[i];
+		p.y = fro_y[i];
+		marker.points.push_back(p);
+	}
+	vis_pub.publish(marker);
 
 }
 
@@ -405,6 +423,7 @@ void Frontier_Search::Vatical_Continuity_Search(void)
 			}
 			if(frontier_sum > 0){
 				start_k = k;
+				continuity = 0;
 				while(frontier_sum > 0 && ros::ok()){
 					frontier_sum = 0;
 					continuity++;
@@ -421,6 +440,7 @@ void Frontier_Search::Vatical_Continuity_Search(void)
 				}
 				end_k = k-1;
 				if(continuity >= robot_cellsize){
+					//std::cout << "Vatical_Continuity << " << continuity << ", start_k << " << start_k << ", end_k << " << end_k << std::endl;
 					frontier_center = (start_k + end_k)/2;
 					flo2int = frontier_center;
 					point[j][flo2int] = 1;
@@ -457,6 +477,7 @@ void Frontier_Search::Side_Continuity_Search(void)
 			}
 			if(frontier_sum > 0){
 				start_k = k;
+				continuity = 0;
 				while(frontier_sum > 0 && ros::ok()){
 					frontier_sum = 0;
 					continuity++;
@@ -474,6 +495,7 @@ void Frontier_Search::Side_Continuity_Search(void)
 				}
 				end_k = k-1;
 				if(continuity >= robot_cellsize){
+					//std::cout << "Side_Continuity << " << continuity << ", start_k << " << start_k << ", end_k << " << end_k << std::endl;
 					frontier_center = (start_k + end_k)/2;
 					flo2int = frontier_center;
 					point[flo2int][i] = 1;
