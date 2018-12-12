@@ -39,8 +39,8 @@ class Frontier_Search
     	float robot_diameter; //ロボットの直径は0.4[m]
     	int search_len_cell;//セル換算した正方形の一辺の長さ
     	int robot_cellsize;//セル換算したロボットサイズ
-    	float low_left_x;//地図の左下のx座標
-    	float low_left_y;//地図の左下のy座標
+    	float low_left_x;//マップ中心から地図の左下までのx座標
+    	float low_left_y;//マップ中心から地図の左下までのy座標
     	int half_sq;//正方形の一辺の半分の長さ(セル)
 
 
@@ -272,7 +272,8 @@ void Frontier_Search::Search_Obstacle(void)
 		if(pre_froy[k]+half_sq > (y-1)){
 			half_bottomy = (y-1)-pre_froy[k];
 		}
-		else{
+		else
+		{
 			half_bottomy = half_sq;
 		}
 		
@@ -318,7 +319,7 @@ void Frontier_Search::Publish_Data(void)
 	for(int i=0; i<fro_num; i++)
 	{
 		poseArray.header.stamp = ros::Time::now();
-		poseArray.header.frame_id = "map";
+		poseArray.header.frame_id = "/server/merge_map";
 		Pose.position.x = fro_x[i];
 		Pose.position.y = fro_y[i];
 		Pose.orientation.x = 0.0;

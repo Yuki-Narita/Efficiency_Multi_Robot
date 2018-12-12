@@ -82,27 +82,33 @@ int main(int argc, char **argv)
         ros::spinOnce();
     }
     */
-   cout << "--------------------【SERVER_PLANINNG START】--------------------" << endl;
+   cout << "---------------------【SERVER_PLANINNG START】-------------------" << endl;
     while(!SP.odom_queue_flag)
-    {
-        SP.robot1_odom_queue.callOne(ros::WallDuration(1));
-    }   
-    SP.odom_queue_flag=false;
-    while(!SP.r1_voronoi_map_update)
     {
         cout << "r1_voronoi_map_update waiting" << endl;
+        SP.robot1_odom_queue.callOne(ros::WallDuration(1));
+    }
+    SP.odom_queue_flag=false;
+    cout << "test" << endl;
+    while(!SP.r1_voronoi_map_update)
+    {
+        cout << "test" << endl;
         SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));
     }
+    sleep(1);
+    int count=0;
     while(!SP.odom_queue_flag)
     {
+        cout << "r2_voronoi_map_update waiting " << endl;
         SP.robot2_odom_queue.callOne(ros::WallDuration(1));
     }
     while(!SP.r2_voronoi_map_update)
     {
-        cout << "r2_voronoi_map_update waiting " << endl;
+        cout << "count: " << count << endl;
         SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));
+        count++;
     }
-    
+
     //メインループ
     while(ros::ok())
     {
@@ -124,7 +130,7 @@ int main(int argc, char **argv)
                 cout << "r1 and r2 voronoi_map_update" << endl;
                 SP.Extraction_Target();
                 SP.Publish_marker();
-                SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
+                //SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
                 std::cout << "Extraction_Target was done." << std::endl;
             }
             //それぞれのロボットの自己位置とゴールを結ぶパスを取得する。
@@ -159,9 +165,10 @@ int main(int argc, char **argv)
             return 0;
         }
         SP.SP_Memory_release();
+        SP.Clear_Vector();
         cout << "loop ended" << endl;
         cout << "\n" << endl;
     }
-    cout << "************SERVER_PLANINNG END************" << endl;
+    cout << "---------------------【SERVER_PLANINNG END】-------------------" << endl;
     return 0;
 }
