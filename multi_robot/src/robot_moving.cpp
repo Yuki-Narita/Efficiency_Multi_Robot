@@ -28,7 +28,8 @@ int main(int argc, char **argv)
         ros::master::getNodes(nodelist);
         for(int i=0; i<nodelist.size();i++)
         {
-            if(nodelist[i] == "/multi_planning_server/server_planning")
+            std::cout << "nodelit name: " << nodelist[i] << std::endl;
+            if(nodelist[i].find("/multi_planning_server/server_planning"))
             {
                 nodelist_flag=true;
             }
@@ -42,8 +43,9 @@ int main(int argc, char **argv)
     oss << param_robot_num;
     param_robot_str = oss.str();
     param_update.setParam("/multi_planning_server/robot_num",param_robot_num);
-    
     //ロボットからサーバーへサービスを配布する。
+    std::cout << "param_robot_num: " << param_robot_num << std::endl;
+    std::cout << "param_robot_str: " << param_robot_str<< std::endl;
     std::string srv_name;
     srv_name = "/robot"+param_robot_str+"/TURN";
     std::cout << "service srv_name : " << srv_name << std::endl;
