@@ -23,18 +23,18 @@ int main(int argc, char **argv)
     ros::Rate r(1);
     std::vector<std::string> nodelist;
     bool nodelist_flag=false;
-    while(!nodelist_flag)
+    while(!nodelist_flag && ros::ok())
     {
         ros::master::getNodes(nodelist);
         for(int i=0; i<nodelist.size();i++)
         {
             std::cout << "nodelit name: " << nodelist[i] << std::endl;
-            if(nodelist[i].find("/multi_planning_server/server_planning"))
+            if(nodelist[i] == "/multi_planning_server/server_planning")
             {
                 nodelist_flag=true;
             }
         }
-
+        r.sleep();
     }
 
     //multi_planning_serverのパラメータにあるロボットの数を更新する。
