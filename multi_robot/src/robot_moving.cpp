@@ -21,6 +21,20 @@ int main(int argc, char **argv)
     std::string param_robot_str;
 
     ros::Rate r(1);
+    std::vector<std::string> nodelist;
+    bool nodelist_flag=false;
+    while(!nodelist_flag)
+    {
+        ros::master::getNodes(nodelist);
+        for(int i=0; i<nodelist.size();i++)
+        {
+            if(nodelist[i] == "/multi_planning_server/server_planning")
+            {
+                nodelist_flag=true;
+            }
+        }
+
+    }
 
     //multi_planning_serverのパラメータにあるロボットの数を更新する。
     param_update.getParam("/multi_planning_server/robot_num",param_robot_num);

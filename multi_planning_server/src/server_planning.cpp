@@ -16,7 +16,7 @@ int main(int argc, char **argv)
     ros::ServiceClient firstturnClient;
     server_planning SP;
 
-    /*
+    
    //ロボットの個数をパラメータサーバーから取得
     robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
     robot_num_nh.getParam("/multi_planning_server/given_robot_num",given_robot_num);
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
         }
 
     }
-    */
+    
 
     /*
     turn_req_pub = turn_nh.advertise<std_msgs::String>("/firstturn",1);
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
         SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));
     }
     sleep(1);
-    int count=0;
+    count=0;
     while(!SP.odom_queue_flag)
     {
         cout << "r2_voronoi_map_update waiting " << endl;
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
     while(!SP.r2_voronoi_map_update)
     {
         cout << "count: " << count << endl;
-        SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));
+        SP.r2_voronoi_map_queue.callOne(ros::WallDuration(2));
         count++;
     }
 
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
             //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
             cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
             cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
-            if(SP.r1_voronoi_map_update && SP.r2_voronoi_map_update)
+            if( SP.map_isinput() || SP.r1_voronoi_map_update && SP.r2_voronoi_map_update)
             {
                 cout << "r1 and r2 voronoi_map_update" << endl;
                 SP.Extraction_Target();
