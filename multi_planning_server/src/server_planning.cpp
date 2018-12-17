@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     ros::NodeHandle robot_num_nh;
     ros::ServiceClient firstturnClient;
     server_planning SP;
-
+/*
     
    //ロボットの個数をパラメータサーバーから取得
     robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
         }
 
     }
-    
+    */
 
     /*
     turn_req_pub = turn_nh.advertise<std_msgs::String>("/firstturn",1);
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
         SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));
     }
     sleep(1);
-    count=0;
+    int count2=0;
     while(!SP.odom_queue_flag)
     {
         cout << "r2_voronoi_map_update waiting " << endl;
@@ -104,9 +104,9 @@ int main(int argc, char **argv)
     }
     while(!SP.r2_voronoi_map_update)
     {
-        cout << "count: " << count << endl;
+        cout << "count2: " << count2 << endl;
         SP.r2_voronoi_map_queue.callOne(ros::WallDuration(2));
-        count++;
+        count2++;
     }
 
     //メインループ

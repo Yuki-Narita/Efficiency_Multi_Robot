@@ -166,7 +166,7 @@ class server_planning
 
 server_planning::server_planning():
 robot_front_point(0.5),
-search_length(0.5)
+search_length(0.1)
 {
     nh1.setCallbackQueue(&queue1);
     nh2.setCallbackQueue(&queue2);
