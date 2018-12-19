@@ -15,7 +15,8 @@ class costmap_publisher
         ros::NodeHandle robot2_publisher;
         ros::NodeHandle robot2_subscriber;
         ros::CallbackQueue robot2_map_queue;
-        
+        ros::Rate rate = 2;
+
         nav_msgs::OccupancyGrid map_data;
         void cost_set(void);
     

@@ -6,6 +6,6 @@
         <node pkg="multi_planning_server" type="Frontier_Search" name="Frontier_Search"/>
         <!-- <node pkg="multi_planning_server" type="server_planning" name="server_planning"/> -->
         <node pkg="multi_planning_server" type="server_planning" name="server_planning" output="screen" launch-prefix="gnome-terminal -x gdb --args"/>
-        <node pkg="multi_planning_server" type="costmap_publisher" name="costmap_publisher" output="screen" launch-prefix="gnome-terminal -x gdb --args"/>
+        <node pkg="multi_planning_server" type="costmap_publisher" name="costmap_publisher"/>
     </group>
 </launch>

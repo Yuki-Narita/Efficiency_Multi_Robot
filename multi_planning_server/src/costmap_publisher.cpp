@@ -17,8 +17,6 @@ costmap_publisher::~costmap_publisher()
 void costmap_publisher::map_info_setter(const nav_msgs::OccupancyGrid::ConstPtr &map_msg)
 {
     cout << "[map_info_setter]" <<endl;
-    map_data.data.clear();
-    map_data.data.shrink_to_fit();
     map_data = *map_msg;
     cout << "map_data size :" << map_data.data.size()<< endl;
     cout << "map_msg size :" << map_msg->data.size()<< endl;
@@ -41,10 +39,11 @@ void costmap_publisher::mainloop()
     while(ros::ok())
     {
         cout << "[mainloop start.]" <<endl;
-        robot1_map_queue.callOne(ros::WallDuration(0.1));
+        robot1_map_queue.callOne(ros::WallDuration(0.5));
         robot1_map_data_publisher();
-        robot2_map_queue.callOne(ros::WallDuration(0.1));
+        robot2_map_queue.callOne(ros::WallDuration(0.5));
         robot2_map_data_publisher();
+        rate.sleep();
         cout << "[mainloop end.]" <<endl;
     }
 

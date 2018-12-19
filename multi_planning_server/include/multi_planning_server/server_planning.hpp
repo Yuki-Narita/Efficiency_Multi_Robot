@@ -132,6 +132,8 @@ class server_planning
     ros::CallbackQueue queueM;
     ros::CallbackQueue queueO;
     ros::CallbackQueue costmap_queue;
+    ros::CallbackQueue robot1_testmap_queue;
+    ros::CallbackQueue robot2_testmap_queue;
 
     //voronoiマップの取得用。
     ros::NodeHandle r1_voronoi_map_nh;
@@ -176,6 +178,9 @@ search_length(0.1)
     robot2_odom_nh.setCallbackQueue(&robot2_odom_queue);
     r1_voronoi_map_nh.setCallbackQueue(&r1_voronoi_map_queue);
     r2_voronoi_map_nh.setCallbackQueue(&r2_voronoi_map_queue);
+    test_map_nh1.setCallbackQueue(&robot1_testmap_queue);
+    test_map_nh2.setCallbackQueue(&robot2_testmap_queue);
+
     //costmap_nh.setCallbackQueue(&costmap_queue);
     vis_pub = vis_nh.advertise<visualization_msgs::Marker>("/vis_marker/Extraction_Target", 1);
     test_map_pub1 = test_map_nh1.advertise<nav_msgs::OccupancyGrid>("/test_map1", 1);
@@ -307,26 +312,36 @@ void server_planning::turn_fin_CB(const std_msgs::String::ConstPtr &msg)
 
 void server_planning::robot1path(const nav_msgs::Path::ConstPtr &path_msg)
 {
-    cout << "[robot1path]----------------------------------------" << endl;
+    cout << "   [robot1path]----------------------------------------" << endl;
+    path_flag1 = true;
     nav_msgs::Path path_tmp = *path_msg;
     float path_length;
+    cout << "test" << endl;
 
     for(int i=0; i<TARGET.size(); i++)
     {
+        cout << "test" << endl;
         for(int j=1;j<path_tmp.poses.size();j++)
         {
+            cout << "test" << endl;
             path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
+            cout << "test" << endl;
         }
+        cout << "test" << endl;
         robot1lengths.push_back(path_length);
-        path_flag1 = true;
-        while(!path_flag1_tmp){};
+        cout << "test" << endl;
+        cout << "test" << endl;
+        while(!path_flag1_tmp){}
+        cout << "test" << endl;
         path_flag1_tmp=false;
     }
-    cout << "[robot1path]----------------------------------------\n" << endl;
+    cout << "test" << endl;
+    cout << "   [robot1path]----------------------------------------\n" << endl;
 }
 void server_planning::robot2path(const nav_msgs::Path::ConstPtr &path_msg)
 {
-    cout << "[robot2path]----------------------------------------" << endl;
+    cout << "   [robot2path]----------------------------------------" << endl;
+    path_flag2 = true;
     nav_msgs::Path path_tmp = *path_msg;
     float path_length;
 
@@ -337,11 +352,10 @@ void server_planning::robot2path(const nav_msgs::Path::ConstPtr &path_msg)
             path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
         }
         robot2lengths.push_back(path_length);
-        path_flag2 = true;
-        while(!path_flag2_tmp){};
+        while(!path_flag2_tmp){}
         path_flag2_tmp=false;
-    }
-    cout << "[robot2path]----------------------------------------\n" << endl;
+    }   
+    cout << "   [robot2path]----------------------------------------\n" << endl;
 }
 void server_planning::Extraction_Target(void)
 {
@@ -574,6 +588,7 @@ void server_planning::FT2robots(void)
 
     robot1lengths.resize(TARGET.size());
     robot2lengths.resize(TARGET.size());
+    cout << "FT2robots TARGET size: " << TARGET.size() << endl;
     std::vector<geometry_msgs::PoseStamped> robot1TARGET;
     std::vector<geometry_msgs::PoseStamped> robot2TARGET;
     std::string robot1header("/robot1/map");
@@ -581,24 +596,40 @@ void server_planning::FT2robots(void)
     robot1TARGET.resize(TARGET.size());
     robot2TARGET.resize(TARGET.size());
     sleep(2);
+    cout << "test" << endl;
     for(int i = 0; i < robot1TARGET.size(); i++)
     {
         robot1TARGET[i].header.frame_id = robot1header;
     }
+    cout << "test" << endl;
     for(int i = 0; i < robot2TARGET.size(); i++)
     {
         robot2TARGET[i].header.frame_id = robot2header;
     }
+    cout << "test" << endl;
     for(int i = 0; i < TARGET.size(); i++)
     {
+        cout << "test" << endl;
         target2robot1.publish(TARGET[i]);
         target2robot2.publish(TARGET[i]);
-        queue1.callOne(ros::WallDuration(1.5));
-        queue2.callOne(ros::WallDuration(1.5));
+        cout << "test" << endl;
+        while(!path_flag1 && !path_flag2)
+        {
+            while(!path_flag1)
+            {
+                queue1.callOne(ros::WallDuration(1));
+            }
+            path_flag1_tmp=true; 
+            while(!path_flag2)
+            {
+                queue2.callOne(ros::WallDuration(1));
+            }
+            path_flag2_tmp=true; 
+        }
+        cout << "test" << endl;
         path_flag1 = false;
         path_flag2 = false;
-        path_flag1_tmp=true; 
-        path_flag2_tmp=true; 
+        cout << "test" << endl;
     }
     cout << "[FT2robots]----------------------------------------\n" << endl;
 }
@@ -691,6 +722,8 @@ void server_planning::enhance_voronoi_map(void)
             r1_enhanced_Voronoi_grid_array[x][y] = 0;
         }
     }
+    cout << "map_height: " << map_height << " map_width: " << map_width << endl;
+    cout << "r1_map_height: " << r1_map_height << " r2_map_width: " << r2_map_width << endl;
     //拡張したボロノイ配列にトピックから受け取ったボロノイ図の情報を反映する。
     for(int y = 0; y < r1_map_height; y++)
     {
