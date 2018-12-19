@@ -1,39 +1,34 @@
-#include <multi_planning_server/costmap_publisher.hpp>
+#include <costmap_publisher_1/costmap_publisher_1.hpp>
 
 using std::cout;
 using std::endl;
 costmap_publisher::costmap_publisher()
 {
-    robot1_subscriber.setCallbackQueue(&robot1_map_queue);
-    robot1_map_sub=robot1_subscriber.subscribe("/robot1/move_base/global_costmap/costmap_updates", 1, &costmap_publisher::map_info_setter, this);
-    robot1_cost_pub=robot1_publisher.advertise<nav_msgs::OccupancyGrid>("/robot1/move_base/global_costmap/costmap_updates", 1);    
-    robot2_subscriber.setCallbackQueue(&robot2_map_queue);
-    robot2_map_sub=robot2_subscriber.subscribe("/robot2/move_base/global_costmap/costmap_updates", 1, &costmap_publisher::map_info_setter, this);
-    robot2_cost_pub=robot2_publisher.advertise<nav_msgs::OccupancyGrid>("/robot2/move_base/global_costmap/costmap_updates", 1);    
+    subscriber.setCallbackQueue(&map_queue);
+    map_sub=subscriber.subscribe("/map", 1, &costmap_publisher::map_info_setter, this);
+    cost_pub=publisher.advertise<map_msgs::OccupancyGridUpdate>("/move_base/global_costmap/costmap_updates", 1);    
 }
 costmap_publisher::~costmap_publisher()
 {}
 
 void costmap_publisher::map_info_setter(const nav_msgs::OccupancyGrid::ConstPtr &map_msg)
+//void costmap_publisher::map_info_setter(const map_msgs::OccupancyGridUpdate::ConstPtr &map_msg)
 {
     cout << "[map_info_setter]" <<endl;
-    map_data.data.clear();
-    map_data.data.shrink_to_fit();
     map_data = *map_msg;
+    map_update.header = map_msg->header;
+    map_update.width = map_msg->info.width;
+    map_update.height = map_msg->info.height;
+    map_update.data = map_msg->data;
+
     cout << "map_data size :" << map_data.data.size()<< endl;
     cout << "map_msg size :" << map_msg->data.size()<< endl;
     cout << "[map_info_setter]" <<endl;
 }
-void costmap_publisher::robot1_map_data_publisher(void)
+void costmap_publisher::map_data_publisher(void)
 {
     cout << "[map_data_publisher]" <<endl;
-    robot1_cost_pub.publish(map_data);
-    cout << "[map_data_publisher]" <<endl;
-}
-void costmap_publisher::robot2_map_data_publisher(void)
-{
-    cout << "[map_data_publisher]" <<endl;
-    robot2_cost_pub.publish(map_data);
+    cost_pub.publish(map_update);
     cout << "[map_data_publisher]" <<endl;
 }
 void costmap_publisher::mainloop()
@@ -41,10 +36,9 @@ void costmap_publisher::mainloop()
     while(ros::ok())
     {
         cout << "[mainloop start.]" <<endl;
-        robot1_map_queue.callOne(ros::WallDuration(0.1));
-        robot1_map_data_publisher();
-        robot2_map_queue.callOne(ros::WallDuration(0.1));
-        robot2_map_data_publisher();
+        map_queue.callOne(ros::WallDuration(0.5));
+        map_data_publisher();
+        rate.sleep();
         cout << "[mainloop end.]" <<endl;
     }
 
