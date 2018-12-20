@@ -47,10 +47,15 @@ class server_planning
     nav_msgs::Odometry robot1_odom;
     nav_msgs::Odometry robot2_odom;
     std::vector<geometry_msgs::PoseStamped> TARGET;
-    std::vector<float> robot1lengths;
-    std::vector<float> robot2lengths;
+    std::vector<std::tuple<int, float, float, float>> robot1lengths;
+    std::vector<std::tuple<int, float, float, float>> robot2lengths;
+    int robot1path_count=0;
+    int robot2path_count=0;
     std::vector<int> frontier_x;
     std::vector<int> frontier_y;
+    std::vector<geometry_msgs::PoseStamped> robot1TARGET;
+    std::vector<geometry_msgs::PoseStamped> robot2TARGET;
+    ros::Rate rate=0.9;
 
     //初期にロボットのvorrnoi_gridを生成するために目的地として与える点。
     float robot_front_point;
@@ -73,16 +78,17 @@ class server_planning
     int r2_frontier_sum;//フラグが続いているかの判定用。
     std::vector<int> pre_frox;
     std::vector<int> pre_froy;
+    int Extracted_sum;//抽出後の目的地の数。
 
     //vis用
     ros::Publisher vis_pub;
     ros::NodeHandle vis_nh;
-    visualization_msgs::Marker marker;
+
 
     public:
     server_planning();
     ~server_planning();
-    void OptimalTarget(const geometry_msgs::PoseStamped::ConstPtr &Target);
+    void OptimalTarget(void);
     void frontier_target_CB(const geometry_msgs::PoseArray::ConstPtr &Target);//FSノードのターゲットの情報をTARGETに格納してここで使えるようにする。
     void frontier_target2map(const std::vector<geometry_msgs::PoseStamped>& Target);//TARGETをマップ配列に入れなおす。（ボロノイ配列と比較できるようにするために）
     void map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg);//mapの更新を監視する
@@ -105,6 +111,7 @@ class server_planning
     void enhance_voronoi_map(void);//受け取ったボロノイ図は各ロボットごとのマップの大きさしかないのでマージマップとは大きさが異なる。拡張することで比較してもセグフォを吐かないようにする。拡張している部分は情報がないので０で初期化してある。
     void Publish_marker(void);//ボロノイ図を使ってフロンティアから抽出した目的地の情報をrviz上で視覚的に確認できるようにするマーカー。
     void Clear_Vector(void);
+    void Clear_Num(void);//カウント初期化用
 
     ros::Subscriber path_sub1;
     ros::Subscriber path_sub2;
@@ -187,8 +194,8 @@ search_length(0.1)
     test_map_pub2 = test_map_nh2.advertise<nav_msgs::OccupancyGrid>("/test_map2", 1);
     target2robot1 = t2r1.advertise<geometry_msgs::PoseStamped>("/robot1/move_base_simple/goal",1);
     target2robot2 = t2r2.advertise<geometry_msgs::PoseStamped>("/robot2/move_base_simple/goal",1);
-    path_sub1=nh1.subscribe("/robot1/move_base/VoronoiPlanner/plan", 1, &server_planning::robot1path, this);
-    path_sub2=nh2.subscribe("/robot2/move_base/VoronoiPlanner/plan", 1, &server_planning::robot2path, this);
+    path_sub1=nh1.subscribe("/robot1/move_base/VoronoiPlanner/plan", 1000, &server_planning::robot1path, this);
+    path_sub2=nh2.subscribe("/robot2/move_base/VoronoiPlanner/plan", 1000, &server_planning::robot2path, this);
     Target_sub=fn.subscribe("/Frontier_Target", 1, &server_planning::frontier_target_CB, this);
     map_sub=mn.subscribe("/server/grid_map_merge/merge_map", 1, &server_planning::map_input, this);
     robot1_odom_sub=robot1_odom_nh.subscribe("/robot1/odom", 1, &server_planning::robot1_odom_CB, this);
@@ -230,8 +237,6 @@ void server_planning::frontier_target_CB(const geometry_msgs::PoseArray::ConstPt
     {
         TARGET[i].header = Target->header;
         TARGET[i].pose = Target->poses[i];
-        cout << "TARGET x: " << TARGET[i].pose.position.x << endl;
-        cout << "TARGET y: " << TARGET[i].pose.position.y << endl;
     }
     frontier_target2map(TARGET);
     queueF_judge = true;
@@ -276,10 +281,46 @@ void server_planning::frontier_target2map(const std::vector<geometry_msgs::PoseS
     }
     cout << "   [frontier_target2map]----------------------------------------" << endl;
 }
-void server_planning::OptimalTarget(const geometry_msgs::PoseStamped::ConstPtr &Target)
+void server_planning::OptimalTarget(void)
 {
+    cout << "[OptimalTarget]----------------------------------------" << endl;
     //各ロボットから算出したすべてのパスの組み合わせて最も小さくなる組み合わせのパスを選択する。
     //その時のフロンティア領域を調べて目的地としてパブリッシュする。
+    float tmp_length;
+    int min_length=100000;
+    int seq1;
+    int seq2;
+    geometry_msgs::PoseStamped final_target1;
+    geometry_msgs::PoseStamped final_target2;
+    std::string robot1header("/robot1/map");
+    std::string robot2header("/robot2/map");
+
+    for(int i=0; i<robot1lengths.size(); i++)
+    {
+        for(int j=0; j<robot2lengths.size(); j++)
+        {
+            if(min_length >= std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]))
+            {
+                min_length = std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]);
+                seq1 = std::get<0>(robot1lengths[i]);
+                seq2 = std::get<0>(robot2lengths[j]);
+                final_target1.pose.position.x = std::get<2>(robot1lengths[i]);
+                final_target1.pose.position.y = std::get<3>(robot1lengths[i]);
+                final_target2.pose.position.x = std::get<2>(robot2lengths[i]);
+                final_target2.pose.position.y = std::get<3>(robot2lengths[i]);
+            }
+        }
+    }
+
+    final_target1.header.frame_id = robot1header;
+    final_target2.header.frame_id = robot2header;
+    final_target1.pose.orientation.w = 0.1;
+    final_target2.pose.orientation.w = 0.1;
+    cout << "final_target1:" << final_target1 << endl;
+    cout << "final_target2:" << final_target2 << endl;
+    target2robot1.publish(final_target1);
+    target2robot2.publish(final_target2);
+    cout << "[OptimalTarget]----------------------------------------" << endl;
 }
 void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 {
@@ -313,48 +354,36 @@ void server_planning::turn_fin_CB(const std_msgs::String::ConstPtr &msg)
 void server_planning::robot1path(const nav_msgs::Path::ConstPtr &path_msg)
 {
     cout << "   [robot1path]----------------------------------------" << endl;
-    path_flag1 = true;
     nav_msgs::Path path_tmp = *path_msg;
-    float path_length;
-    cout << "test" << endl;
-
-    for(int i=0; i<TARGET.size(); i++)
+    cout << "test_path1" << endl;
+    float path_length = 0;
+    cout << "count: " << robot1path_count << endl;
+    for(int j=1;j<path_tmp.poses.size();j++)
     {
-        cout << "test" << endl;
-        for(int j=1;j<path_tmp.poses.size();j++)
-        {
-            cout << "test" << endl;
-            path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
-            cout << "test" << endl;
-        }
-        cout << "test" << endl;
-        robot1lengths.push_back(path_length);
-        cout << "test" << endl;
-        cout << "test" << endl;
-        while(!path_flag1_tmp){}
-        cout << "test" << endl;
-        path_flag1_tmp=false;
+        path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
     }
-    cout << "test" << endl;
+    cout << "path_length: " << path_length << endl;
+    robot1lengths[robot1path_count] = std::tuple<int, float, float, float>(robot1path_count, path_length, robot1TARGET[robot1path_count].pose.position.x, robot1TARGET[robot1path_count].pose.position.y);
+    robot1path_count++;
+    cout << "robot1lengths seq: " << std::get<0>(robot1lengths[robot1path_count]) << endl;
+    cout << "robot1lengths size: " << robot1lengths.size() << endl;
     cout << "   [robot1path]----------------------------------------\n" << endl;
 }
 void server_planning::robot2path(const nav_msgs::Path::ConstPtr &path_msg)
 {
     cout << "   [robot2path]----------------------------------------" << endl;
-    path_flag2 = true;
     nav_msgs::Path path_tmp = *path_msg;
-    float path_length;
-
-    for(int i=0; i<TARGET.size(); i++)
+    cout << "test_path2" << endl;
+    float path_length = 0;
+    cout << "robot2lengths seq: " << std::get<0>(robot2lengths[robot2path_count]) << endl; 
+    for(int j=1;j<path_tmp.poses.size();j++)
     {
-        for(int j=1;j<path_tmp.poses.size();j++)
-        {
-            path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
-        }
-        robot2lengths.push_back(path_length);
-        while(!path_flag2_tmp){}
-        path_flag2_tmp=false;
-    }   
+        path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
+    }
+    cout << "path_length: " << path_length << endl;
+    robot1lengths[robot1path_count] = std::tuple<int, float, float, float>(robot2path_count, path_length, robot2TARGET[robot2path_count].pose.position.x, robot2TARGET[robot2path_count].pose.position.y);
+    robot2path_count++;
+    cout << "robot2lengths size: " << robot2lengths.size() << endl;
     cout << "   [robot2path]----------------------------------------\n" << endl;
 }
 void server_planning::Extraction_Target(void)
@@ -365,19 +394,12 @@ void server_planning::Extraction_Target(void)
     cout << "TARGET size: " << TARGET.size() << endl;
     pre_frox.resize(TARGET.size());
     pre_froy.resize(TARGET.size());
-    for(int i = 0; i < fro_num; i++)
-    {
-        cout << "TARGET x: " << TARGET[i].pose.position.x << endl;
-        cout << "TARGET y: " << TARGET[i].pose.position.y << endl;
-        cout << "frontier x: " << frontier_x[i] << endl;
-        cout << "frontier y: " << frontier_y[i] << endl;
-    }
+    Extracted_sum = 0;
+
     for(int i=0; i<fro_num; i++)
     {
         pre_frox[i] = (TARGET[i].pose.position.x-map_origin.position.x)/map_resolution;
-        cout << "pre_frox: " << pre_frox[i] << endl;
         pre_froy[i] = (TARGET[i].pose.position.y-map_origin.position.y)/map_resolution;
-        cout << "pre_froy: " << pre_froy[i] << endl;
     }
     cout << "pre_frox: " << pre_frox.size() << " pre_froy: " << pre_froy.size() << endl;
 
@@ -433,7 +455,6 @@ void server_planning::Extraction_Target(void)
 		if(r1_frontier_sum>128)
         {
 			r1_enhanced_Voronoi_grid_array[pre_frox[k]][pre_froy[k]] = 1;
-            cout << "r1_enhanced_Voronoi_grid_array[" << pre_frox[k] <<"][" << pre_froy[k] << "]" <<endl;
 		}
         for(int i=(pre_froy[k]-half_topy);i<(pre_froy[k]+half_bottomy+1);i++)
         {
@@ -446,7 +467,6 @@ void server_planning::Extraction_Target(void)
 		if(r2_frontier_sum>128)
         {
 			r2_enhanced_Voronoi_grid_array[pre_frox[k]][pre_froy[k]] = 1;
-            cout << "r2_enhanced_Voronoi_grid_array[" << pre_frox[k] <<"][" << pre_froy[k] << "]" <<endl;
 		}
 	}
     for(int j=0; j < map_height; j++)
@@ -455,7 +475,6 @@ void server_planning::Extraction_Target(void)
         {
             if(r1_enhanced_Voronoi_grid_array[i][j] == 1)
             {
-                cout << "coordinate grid array :" << "[i: "<< i << "]" << " [j: " << j << "]" << endl;
                 t_target.pose.position.x = map_resolution * i + map_origin.position.x;
                 t_target.pose.position.y = map_resolution * j + map_origin.position.y;
                 t_target.pose.orientation.x = 0.0;
@@ -463,7 +482,6 @@ void server_planning::Extraction_Target(void)
                 t_target.pose.orientation.z = 0.0;
                 t_target.pose.orientation.w = 1.0;
                 Extraction_Target_r1.push_back(t_target);
-                cout << "r1 Extracted target: " << "[x: "<< t_target.pose.position.x << "]" << " [y: " << t_target.pose.position.y << "]" <<  endl;
             }
         }
     }
@@ -474,7 +492,7 @@ void server_planning::Extraction_Target(void)
     {
         for(int i=0; i < map_width; i++)
         {
-            if(r2_enhanced_Voronoi_grid_array[i][j] == -128 && Frontier_array[i][j] == 1)
+            if(r2_enhanced_Voronoi_grid_array[i][j] == 1)
             {
                 t_target.pose.position.x = map_resolution * i + map_origin.position.x;
                 t_target.pose.position.y = map_resolution * j + map_origin.position.y;
@@ -483,11 +501,12 @@ void server_planning::Extraction_Target(void)
                 t_target.pose.orientation.z = 0.0;
                 t_target.pose.orientation.w = 1.0;
                 Extraction_Target_r2.push_back(t_target);
-                cout << "r2 Extracted target." << endl;
             }
         }
     }
     cout << "r2 Extracted target size: " << Extraction_Target_r2.size() << endl;
+    Extracted_sum = Extraction_Target_r1.size() + Extraction_Target_r2.size();
+    cout << "Extracted_sum: " << Extracted_sum << endl;
     cout << "[Extraction_Target]----------------------------------------\n" << endl;
 }
 
@@ -496,6 +515,8 @@ void server_planning::r1_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr&
     cout << "[r1_voronoi_map_CB]----------------------------------------" << endl;
     r1_map_height = voronoi_map_msg ->info.height;
     r1_map_width = voronoi_map_msg ->info.width;
+    cout << "voronoi_map width: " << voronoi_map_msg->info.width << endl;
+    cout << "voronoi_map height: " << voronoi_map_msg->info.height << endl;
     cout << "voronoi_map resolution: " << voronoi_map_msg->info.resolution << endl;
     //ボロノイグリッド格納用の配列を確保
     r1_Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
@@ -520,6 +541,9 @@ void server_planning::r2_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr&
     cout << "[r2_voronoi_map_CB]----------------------------------------" << endl;
     r2_map_height = voronoi_map_msg ->info.height;
     r2_map_width = voronoi_map_msg ->info.width;
+    cout << "voronoi_map width: " << voronoi_map_msg->info.width << endl;
+    cout << "voronoi_map height: " << voronoi_map_msg->info.height << endl;
+    cout << "voronoi_map resolution: " << voronoi_map_msg->info.resolution << endl;
     //ボロノイグリッド格納用の配列を確保
     r2_Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
     for(int p = 0; p < voronoi_map_msg->info.width; p++)
@@ -541,25 +565,31 @@ void server_planning::r2_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr&
 void server_planning::SP_Memory_release(void)
 {
     cout << "[Memory_release]----------------------------------------" << endl;
-    cout << "r1_voronoif_map_update:" << r1_voronoi_map_update << endl;
+    cout << "r1_voronoi_map_update:" << r1_voronoi_map_update << endl;
+    cout << "r1_map_width: " << r1_map_width << endl;
+    cout << "map_width: " << map_width << endl;
     if(r1_voronoi_map_update)
     {
         for(int p = 0; p < r1_map_width; p++)
         {
             delete[] r1_Voronoi_grid_array[p];
         }
+        cout << "test" << endl;
         delete[] r1_Voronoi_grid_array;
-        
+        cout << "test" << endl;
         for(int p = 0; p < map_width; p++)
         {
             delete[] r1_enhanced_Voronoi_grid_array[p];
         }
+        cout << "test" << endl;
         delete[] r1_enhanced_Voronoi_grid_array;
         r1_voronoi_map_update = false;
     }
     cout << "r2_vorono_map_update:" << r2_voronoi_map_update << endl;
+    cout << "r2_map_width: " << r1_map_width << endl;
+    cout << "map_width: " << map_width << endl;
     if(r2_voronoi_map_update)
-    {cout << "test" << endl;
+    {
         for(int p = 0; p < r2_map_width; p++)
         {
             delete[] r2_Voronoi_grid_array[p];
@@ -585,51 +615,39 @@ void server_planning::SP_Memory_release(void)
 void server_planning::FT2robots(void)   
 {
     cout << "[FT2robots]----------------------------------------" << endl;
+    robot1lengths.resize(Extracted_sum);
+    robot2lengths.resize(Extracted_sum);
+    cout << "FT2robots Extracted_sum size: " << Extracted_sum << endl;
 
-    robot1lengths.resize(TARGET.size());
-    robot2lengths.resize(TARGET.size());
-    cout << "FT2robots TARGET size: " << TARGET.size() << endl;
-    std::vector<geometry_msgs::PoseStamped> robot1TARGET;
-    std::vector<geometry_msgs::PoseStamped> robot2TARGET;
     std::string robot1header("/robot1/map");
     std::string robot2header("/robot2/map");
-    robot1TARGET.resize(TARGET.size());
-    robot2TARGET.resize(TARGET.size());
-    sleep(2);
-    cout << "test" << endl;
-    for(int i = 0; i < robot1TARGET.size(); i++)
-    {
-        robot1TARGET[i].header.frame_id = robot1header;
-    }
-    cout << "test" << endl;
-    for(int i = 0; i < robot2TARGET.size(); i++)
-    {
-        robot2TARGET[i].header.frame_id = robot2header;
-    }
-    cout << "test" << endl;
-    for(int i = 0; i < TARGET.size(); i++)
-    {
-        cout << "test" << endl;
-        target2robot1.publish(TARGET[i]);
-        target2robot2.publish(TARGET[i]);
-        cout << "test" << endl;
-        while(!path_flag1 && !path_flag2)
+    robot1TARGET.resize(Extracted_sum);
+    robot2TARGET.resize(Extracted_sum);
+    cout << "test1" << endl;
+    if(Extraction_Target_r1.size() != 0)
+    {  
+        for(int i = 0; i < robot1TARGET.size(); i++)
         {
-            while(!path_flag1)
-            {
-                queue1.callOne(ros::WallDuration(1));
-            }
-            path_flag1_tmp=true; 
-            while(!path_flag2)
-            {
-                queue2.callOne(ros::WallDuration(1));
-            }
-            path_flag2_tmp=true; 
+            robot1TARGET[i].header.frame_id = robot1header;
+            robot1TARGET[i].header.seq = i;
+            robot1TARGET[i].pose.position.x = Extraction_Target_r1[i].pose.position.x;
+            robot1TARGET[i].pose.position.y = Extraction_Target_r1[i].pose.position.y;
+            target2robot1.publish(robot1TARGET[i]);
+            rate.sleep();
         }
-        cout << "test" << endl;
-        path_flag1 = false;
-        path_flag2 = false;
-        cout << "test" << endl;
+    }
+    cout << "test2" << endl;
+    if(Extraction_Target_r2.size() != 0)
+    {
+        for(int i = 0; i < robot2TARGET.size(); i++)
+        {
+            robot2TARGET[i].header.frame_id = robot2header;
+            robot2TARGET[i].header.seq = i;
+            robot2TARGET[i].pose.position.x = Extraction_Target_r2[i].pose.position.x - 3.0;
+            robot2TARGET[i].pose.position.y = Extraction_Target_r2[i].pose.position.y;
+            target2robot2.publish(robot2TARGET[i]);
+            rate.sleep();
+        }
     }
     cout << "[FT2robots]----------------------------------------\n" << endl;
 }
@@ -783,6 +801,7 @@ void server_planning::Publish_marker(void)
 {
     cout << "[publish_marker]----------------------------------------" << endl;
     uint32_t shape = visualization_msgs::Marker::CUBE_LIST;
+    visualization_msgs::Marker marker;
         marker.header.frame_id = "/server/merge_map";
         marker.header.stamp = ros::Time::now();
         marker.ns = "Extraction_target";
@@ -825,7 +844,24 @@ void server_planning::Clear_Vector(void)
 	pre_frox.shrink_to_fit();
 	pre_froy.clear();
 	pre_froy.shrink_to_fit();
+    Extraction_Target_r1.clear();
+	Extraction_Target_r1.shrink_to_fit();
+    Extraction_Target_r2.clear();
+	Extraction_Target_r2.shrink_to_fit();
+    robot1lengths.clear();
+	robot1lengths.shrink_to_fit();
+    robot2lengths.clear();
+	robot2lengths.shrink_to_fit();
+    robot1TARGET.clear();
+    robot1TARGET.shrink_to_fit();
+    robot2TARGET.clear();
+    robot2TARGET.shrink_to_fit();
 }
 
+void server_planning::Clear_Num(void)
+{
+    robot1path_count = 0;
+    robot2path_count = 0;
+}
 
 #endif

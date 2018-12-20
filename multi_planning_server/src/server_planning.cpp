@@ -114,6 +114,8 @@ int main(int argc, char **argv)
             }
             SP.queueF_judge = false;
             std::cout << "queueF.callOne was done." << std::endl;
+            SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));
+            SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));
             //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
             cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
             cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
@@ -121,18 +123,33 @@ int main(int argc, char **argv)
             {
                 cout << "r1 and r2 voronoi_map_update" << endl;
                 SP.Extraction_Target();
+                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
+                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
                 SP.Publish_marker();
+                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
+                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
                 SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
-                std::cout << "Extraction_Target was done." << std::endl;
+                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
+                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
+                SP.queue1.callAvailable();
+                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
+                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
+                SP.queue2.callAvailable();
+                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
+                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
+                SP.OptimalTarget();
                 SP.r1_voronoi_map_update = false;
+                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
+                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
                 SP.r2_voronoi_map_update = false;
+                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
+                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
+                getchar();
             }
             else
             {
-                SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));
-                SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));
+                continue;
             }
-
             //それぞれのロボットの自己位置とゴールを結ぶパスを取得する。
             //
             /*
@@ -166,12 +183,16 @@ int main(int argc, char **argv)
             ROS_ERROR_STREAM("Planning_Server miss map-refresh");
             return 0;
         }
+        cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
+                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
         SP.SP_Memory_release();
         SP.Clear_Vector();
+        SP.Clear_Num();
+
         cout << "loop ended" << endl;
         cout << "\n" << endl;
     }
-        robot_num_nh.setParam("/multi_planning_server/robot_num",0);
+    robot_num_nh.setParam("/multi_planning_server/robot_num",0);
     robot_num_nh.setParam("/multi_planning_server/given_robot_num",0);
     cout << "---------------------【SERVER_PLANINNG END】-------------------" << endl;
     return 0;
