@@ -46,16 +46,16 @@ class server_planning
     private:
     nav_msgs::Odometry robot1_odom;
     nav_msgs::Odometry robot2_odom;
-    std::vector<geometry_msgs::PoseStamped> TARGET;
-    std::vector<std::tuple<int, float, float, float>> robot1lengths;
-    std::vector<std::tuple<int, float, float, float>> robot2lengths;
+    std::vector<geometry_msgs::PoseStamped> TARGET;//FSノードから取得したフロンティア領域
+    std::vector<std::tuple<int, float, float, float>> robot1lengths;//ロボット１の自己位置から目的地までの長さのコンテナ
+    std::vector<std::tuple<int, float, float, float>> robot2lengths;//ロボット２の自己位置から目的地までの長さのコンテナ
     int robot1path_count=0;
     int robot2path_count=0;
     std::vector<int> frontier_x;
     std::vector<int> frontier_y;
-    std::vector<geometry_msgs::PoseStamped> robot1TARGET;
-    std::vector<geometry_msgs::PoseStamped> robot2TARGET;
-    ros::Rate rate=0.9;
+    std::vector<geometry_msgs::PoseStamped> robot1TARGET;//抽出後のロボット１への目的地
+    std::vector<geometry_msgs::PoseStamped> robot2TARGET;//抽出後のロボット２への目的地
+    ros::Rate rate=10;
 
     //初期にロボットのvorrnoi_gridを生成するために目的地として与える点。
     float robot_front_point;
@@ -301,6 +301,8 @@ void server_planning::OptimalTarget(void)
         {
             if(min_length >= std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]))
             {
+                cout << "robot1length[" << i << "]: " << std::get<1>(robot1lengths[i]) << endl;
+                cout << "robot2length[" << j << "]: " << std::get<1>(robot2lengths[j]) << endl;
                 min_length = std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]);
                 seq1 = std::get<0>(robot1lengths[i]);
                 seq2 = std::get<0>(robot2lengths[j]);
@@ -311,7 +313,7 @@ void server_planning::OptimalTarget(void)
             }
         }
     }
-
+    cout << "min_length: " << min_length << endl;
     final_target1.header.frame_id = robot1header;
     final_target2.header.frame_id = robot2header;
     final_target1.pose.orientation.w = 0.1;
@@ -355,7 +357,6 @@ void server_planning::robot1path(const nav_msgs::Path::ConstPtr &path_msg)
 {
     cout << "   [robot1path]----------------------------------------" << endl;
     nav_msgs::Path path_tmp = *path_msg;
-    cout << "test_path1" << endl;
     float path_length = 0;
     cout << "count: " << robot1path_count << endl;
     for(int j=1;j<path_tmp.poses.size();j++)
@@ -373,9 +374,8 @@ void server_planning::robot2path(const nav_msgs::Path::ConstPtr &path_msg)
 {
     cout << "   [robot2path]----------------------------------------" << endl;
     nav_msgs::Path path_tmp = *path_msg;
-    cout << "test_path2" << endl;
     float path_length = 0;
-    cout << "robot2lengths seq: " << std::get<0>(robot2lengths[robot2path_count]) << endl; 
+    cout << "count: " << robot1path_count << endl;
     for(int j=1;j<path_tmp.poses.size();j++)
     {
         path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
@@ -383,6 +383,7 @@ void server_planning::robot2path(const nav_msgs::Path::ConstPtr &path_msg)
     cout << "path_length: " << path_length << endl;
     robot1lengths[robot1path_count] = std::tuple<int, float, float, float>(robot2path_count, path_length, robot2TARGET[robot2path_count].pose.position.x, robot2TARGET[robot2path_count].pose.position.y);
     robot2path_count++;
+    cout << "robot2lengths seq: " << std::get<0>(robot2lengths[robot2path_count]) << endl; 
     cout << "robot2lengths size: " << robot2lengths.size() << endl;
     cout << "   [robot2path]----------------------------------------\n" << endl;
 }
@@ -614,7 +615,7 @@ void server_planning::SP_Memory_release(void)
 
 void server_planning::FT2robots(void)   
 {
-    cout << "[FT2robots]----------------------------------------" << endl;
+    cout << "[FT2robots start]----------------------------------------" << endl;
     robot1lengths.resize(Extracted_sum);
     robot2lengths.resize(Extracted_sum);
     cout << "FT2robots Extracted_sum size: " << Extracted_sum << endl;
@@ -649,7 +650,7 @@ void server_planning::FT2robots(void)
             rate.sleep();
         }
     }
-    cout << "[FT2robots]----------------------------------------\n" << endl;
+    cout << "[FT2robots end]----------------------------------------\n" << endl;
 }
 
 void server_planning::costmap_CB(const nav_msgs::OccupancyGrid::ConstPtr& costmap_msg)
