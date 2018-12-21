@@ -41,6 +41,7 @@ int **costmap_array;
 float map_resolution;
 geometry_msgs::Pose map_origin;
 
+
 class server_planning
 {
     private:
@@ -295,21 +296,30 @@ void server_planning::OptimalTarget(void)
     std::string robot1header("/robot1/map");
     std::string robot2header("/robot2/map");
 
+    cout << "robot1lengths size:" << robot1lengths.size() << endl;
+    cout << "robot2lengths size:" << robot2lengths.size() << endl;
+    robot1lengths.shrink_to_fit();
+    robot2lengths.shrink_to_fit();
+    cout << "robot1lengths size:" << robot1lengths.size() << endl;
+    cout << "robot2lengths size:" << robot2lengths.size() << endl;
     for(int i=0; i<robot1lengths.size(); i++)
     {
         for(int j=0; j<robot2lengths.size(); j++)
         {
-            if(min_length >= std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]))
+                cout << "robot1lengths[" << i << "]: " << std::get<1>(robot1lengths[i]) << endl;
+                cout << "robot2lengths[" << j << "]: " << std::get<1>(robot2lengths[j]) << endl;
+            if(min_length >= std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]) && 0 != std::get<1>(robot1lengths[i]) && 0 != std::get<1>(robot2lengths[i]))
             {
-                cout << "robot1length[" << i << "]: " << std::get<1>(robot1lengths[i]) << endl;
-                cout << "robot2length[" << j << "]: " << std::get<1>(robot2lengths[j]) << endl;
                 min_length = std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]);
-                seq1 = std::get<0>(robot1lengths[i]);
-                seq2 = std::get<0>(robot2lengths[j]);
                 final_target1.pose.position.x = std::get<2>(robot1lengths[i]);
                 final_target1.pose.position.y = std::get<3>(robot1lengths[i]);
+                cout << "robot1lengths frontier_x: " << std::get<2>(robot1lengths[i]) << endl;
+                cout << "robot1lengths frontier_y: " << std::get<3>(robot1lengths[i]) << endl;
                 final_target2.pose.position.x = std::get<2>(robot2lengths[i]);
                 final_target2.pose.position.y = std::get<3>(robot2lengths[i]);
+                cout << "robot2lengths frontier_x: " << std::get<2>(robot2lengths[i]) << endl;
+                cout << "robot2lengths frontier_y: " << std::get<3>(robot2lengths[i]) << endl;
+                cout << "test" << endl; 
             }
         }
     }
@@ -364,7 +374,7 @@ void server_planning::robot1path(const nav_msgs::Path::ConstPtr &path_msg)
         path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
     }
     cout << "path_length: " << path_length << endl;
-    robot1lengths[robot1path_count] = std::tuple<int, float, float, float>(robot1path_count, path_length, robot1TARGET[robot1path_count].pose.position.x, robot1TARGET[robot1path_count].pose.position.y);
+    robot1lengths[robot1path_count] = std::make_tuple(robot1path_count, path_length, robot1TARGET[robot1path_count].pose.position.x, robot1TARGET[robot1path_count].pose.position.y);
     robot1path_count++;
     cout << "robot1lengths seq: " << std::get<0>(robot1lengths[robot1path_count]) << endl;
     cout << "robot1lengths size: " << robot1lengths.size() << endl;
@@ -375,13 +385,13 @@ void server_planning::robot2path(const nav_msgs::Path::ConstPtr &path_msg)
     cout << "   [robot2path]----------------------------------------" << endl;
     nav_msgs::Path path_tmp = *path_msg;
     float path_length = 0;
-    cout << "count: " << robot1path_count << endl;
+    cout << "count: " << robot2path_count << endl;
     for(int j=1;j<path_tmp.poses.size();j++)
     {
         path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
     }
     cout << "path_length: " << path_length << endl;
-    robot1lengths[robot1path_count] = std::tuple<int, float, float, float>(robot2path_count, path_length, robot2TARGET[robot2path_count].pose.position.x, robot2TARGET[robot2path_count].pose.position.y);
+    robot2lengths[robot2path_count] = std::make_tuple(robot2path_count, path_length, robot2TARGET[robot2path_count].pose.position.x, robot2TARGET[robot2path_count].pose.position.y);
     robot2path_count++;
     cout << "robot2lengths seq: " << std::get<0>(robot2lengths[robot2path_count]) << endl; 
     cout << "robot2lengths size: " << robot2lengths.size() << endl;

@@ -144,7 +144,6 @@ int main(int argc, char **argv)
                 SP.r2_voronoi_map_update = false;
                 cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
                 cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
-                getchar();
             }
             else
             {
