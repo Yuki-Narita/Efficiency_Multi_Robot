@@ -124,8 +124,12 @@ class server_planning
     ros::Publisher target2robot2;
     ros::Publisher test_map_pub1;
     ros::Publisher test_map_pub2;
+    ros::Publisher robot1_final_target_pub;
+    ros::Publisher robot2_final_target_pub;
     ros::NodeHandle nh1;
     ros::NodeHandle nh2;
+    ros::NodeHandle robot1_final_target_nh;
+    ros::NodeHandle robot2_final_target_nh;
     ros::NodeHandle fn;
     ros::NodeHandle mn;
     ros::NodeHandle t2r1;
@@ -195,6 +199,8 @@ search_length(0.1)
     test_map_pub2 = test_map_nh2.advertise<nav_msgs::OccupancyGrid>("/test_map2", 1);
     target2robot1 = t2r1.advertise<geometry_msgs::PoseStamped>("/robot1/move_base_simple/goal",1);
     target2robot2 = t2r2.advertise<geometry_msgs::PoseStamped>("/robot2/move_base_simple/goal",1);
+    robot1_final_target_pub = robot1_final_target_nh.advertise<geometry_msgs::PoseStamped>("/robot1/final_target",1);
+    robot2_final_target_pub = robot2_final_target_nh.advertise<geometry_msgs::PoseStamped>("/robot2/final_target",1);
     path_sub1=nh1.subscribe("/robot1/move_base/VoronoiPlanner/plan", 1000, &server_planning::robot1path, this);
     path_sub2=nh2.subscribe("/robot2/move_base/VoronoiPlanner/plan", 1000, &server_planning::robot2path, this);
     Target_sub=fn.subscribe("/Frontier_Target", 1, &server_planning::frontier_target_CB, this);
@@ -330,8 +336,8 @@ void server_planning::OptimalTarget(void)
     final_target2.pose.orientation.w = 0.1;
     cout << "final_target1:" << final_target1 << endl;
     cout << "final_target2:" << final_target2 << endl;
-    target2robot1.publish(final_target1);
-    target2robot2.publish(final_target2);
+    robot1_final_target_pub.publish(final_target1);
+    robot2_final_target_pub.publish(final_target2);
     cout << "[OptimalTarget]----------------------------------------" << endl;
 }
 void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
