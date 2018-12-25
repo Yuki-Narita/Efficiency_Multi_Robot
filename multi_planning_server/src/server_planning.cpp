@@ -123,27 +123,13 @@ int main(int argc, char **argv)
             {
                 cout << "r1 and r2 voronoi_map_update" << endl;
                 SP.Extraction_Target();
-                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
-                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
                 SP.Publish_marker();
-                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
-                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
                 SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
-                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
-                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
                 SP.queue1.callAvailable();
-                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
-                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
                 SP.queue2.callAvailable();
-                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
-                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
                 SP.OptimalTarget();
                 SP.r1_voronoi_map_update = false;
-                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
-                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
                 SP.r2_voronoi_map_update = false;
-                cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
-                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
             }
             else
             {

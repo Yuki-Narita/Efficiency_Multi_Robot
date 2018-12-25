@@ -47,6 +47,7 @@ class server_planning
     private:
     nav_msgs::Odometry robot1_odom;
     nav_msgs::Odometry robot2_odom;
+    geometry_msgs::PoseStamped stop_pose;
     std::vector<geometry_msgs::PoseStamped> TARGET;//FSノードから取得したフロンティア領域
     std::vector<std::tuple<int, float, float, float>> robot1lengths;//ロボット１の自己位置から目的地までの長さのコンテナ
     std::vector<std::tuple<int, float, float, float>> robot2lengths;//ロボット２の自己位置から目的地までの長さのコンテナ
@@ -213,6 +214,8 @@ search_length(0.1)
     get_param_nh.getParam("/robot1_init_y",robot1_init_y);
     get_param_nh.getParam("/robot2_init_x",robot2_init_x);
     get_param_nh.getParam("/robot2_init_y",robot2_init_y);
+    stop_pose.pose.position.x = 0.0;
+    stop_pose.pose.position.y = 0.0;
 }
 server_planning::~server_planning()
 {}
@@ -650,8 +653,11 @@ void server_planning::FT2robots(void)
             robot1TARGET[i].pose.position.x = Extraction_Target_r1[i].pose.position.x;
             robot1TARGET[i].pose.position.y = Extraction_Target_r1[i].pose.position.y;
             target2robot1.publish(robot1TARGET[i]);
+            if(i == robot1TARGET.size()-1) break;
             rate.sleep();
         }
+        stop_pose.header.frame_id = robot1header;
+        target2robot1.publish(stop_pose);
     }
     cout << "test2" << endl;
     if(Extraction_Target_r2.size() != 0)
@@ -663,8 +669,11 @@ void server_planning::FT2robots(void)
             robot2TARGET[i].pose.position.x = Extraction_Target_r2[i].pose.position.x - 3.0;
             robot2TARGET[i].pose.position.y = Extraction_Target_r2[i].pose.position.y;
             target2robot2.publish(robot2TARGET[i]);
+            if(i == robot2TARGET.size()-1) break;
             rate.sleep();
         }
+        stop_pose.header.frame_id = robot2header;
+        target2robot1.publish(stop_pose);
     }
     cout << "[FT2robots end]----------------------------------------\n" << endl;
 }

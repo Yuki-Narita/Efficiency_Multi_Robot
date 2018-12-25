@@ -7,5 +7,6 @@
         <!-- <node pkg="multi_planning_server" type="server_planning" name="server_planning"/> -->
         <node pkg="multi_planning_server" type="server_planning" name="server_planning" output="screen"/>
         <!--<node pkg="multi_planning_server" type="costmap_publisher" name="costmap_publisher"/>-->
+        <include file="$(find robot_action_mng)/launch/robot_action_mng.launch"/>
     </group>
 </launch>
