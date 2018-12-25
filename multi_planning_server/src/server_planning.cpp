@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     }
     */
    cout << "---------------------【SERVER_PLANINNG START】-------------------" << endl;
-    while(!SP.odom_queue_flag || !SP.r1_voronoi_map_update)
+    while(!SP.odom_queue_flag || !SP.r1_voronoi_map_update || ros::ok())
     {
         cout << "r1_voronoi_map_update waiting" << endl;
         SP.robot1_odom_queue.callOne(ros::WallDuration(1));
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
     cout << "test" << endl;
     sleep(1);
     int count2=0;
-    while(!SP.odom_queue_flag || !SP.r2_voronoi_map_update)
+    while(!SP.odom_queue_flag || !SP.r2_voronoi_map_update || ros::ok())
     {
         cout << "r2_voronoi_map_update waiting " << endl;
         SP.robot2_odom_queue.callOne(ros::WallDuration(1));
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
         if(SP.map_isinput())
         {
             //Frontier_Searchからの座標を取得
-            while(!SP.queueF_judge)
+            while(!SP.queueF_judge || ros::ok())
             {
                 SP.queueF.callOne(ros::WallDuration(1));
             }
@@ -128,6 +128,11 @@ int main(int argc, char **argv)
                 SP.queue1.callAvailable();
                 SP.queue2.callAvailable();
                 SP.OptimalTarget();
+                while(!SP.arrive1 || !SP.arrive2 || ros::ok())
+                {
+                    SP.arrive1_queue.callOne();
+                    SP.arrive2_queue.callOne();
+                }
                 SP.r1_voronoi_map_update = false;
                 SP.r2_voronoi_map_update = false;
             }

@@ -3,6 +3,7 @@
 
 #include<ros/ros.h>
 #include<ros/callback_queue.h>
+#include<std_msgs/Bool.h>
 #include<geometry_msgs/PoseStamped.h>
 #include<geometry_msgs/PoseArray.h>
 #include<nav_msgs/Path.h>
@@ -114,12 +115,16 @@ class server_planning
     void Publish_marker(void);//ボロノイ図を使ってフロンティアから抽出した目的地の情報をrviz上で視覚的に確認できるようにするマーカー。
     void Clear_Vector(void);
     void Clear_Num(void);//カウント初期化用
+    void arrive1_flag(const std_msgs::Bool::ConstPtr &msg);
+    void arrive2_flag(const std_msgs::Bool::ConstPtr &msg);
 
     ros::Subscriber path_sub1;
     ros::Subscriber path_sub2;
     ros::Subscriber Target_sub;
     ros::Subscriber map_sub;
     ros::Subscriber costmap_sub;
+    ros::Subscriber arrive1_sub;
+    ros::Subscriber arrive2_sub;
     ros::Publisher pub;
     ros::Publisher target2robot1;
     ros::Publisher target2robot2;
@@ -139,6 +144,8 @@ class server_planning
     ros::NodeHandle test_map_nh1;
     ros::NodeHandle test_map_nh2;
     ros::NodeHandle get_param_nh;
+    ros::NodeHandle arrive1_nh;
+    ros::NodeHandle arrive2_nh;
     ros::CallbackQueue queue1;
     ros::CallbackQueue queue2;
     ros::CallbackQueue queueF;
@@ -147,6 +154,8 @@ class server_planning
     ros::CallbackQueue costmap_queue;
     ros::CallbackQueue robot1_testmap_queue;
     ros::CallbackQueue robot2_testmap_queue;
+    ros::CallbackQueue arrive1_queue;
+    ros::CallbackQueue arrive2_queue;
 
     //voronoiマップの取得用。
     ros::NodeHandle r1_voronoi_map_nh;
@@ -172,6 +181,8 @@ class server_planning
     bool r2_voronoi_map_update=false;
     bool queueF_judge=false;
     bool odom_queue_flag=false;
+    bool arrive1;
+    bool arrive2;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target_r1;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target_r2;
     std::string tmp_name;
@@ -193,6 +204,8 @@ search_length(0.1)
     r2_voronoi_map_nh.setCallbackQueue(&r2_voronoi_map_queue);
     test_map_nh1.setCallbackQueue(&robot1_testmap_queue);
     test_map_nh2.setCallbackQueue(&robot2_testmap_queue);
+    arrive1_nh.setCallbackQueue(&arrive1_queue);
+    arrive2_nh.setCallbackQueue(&arrive2_queue);
 
     //costmap_nh.setCallbackQueue(&costmap_queue);
     vis_pub = vis_nh.advertise<visualization_msgs::Marker>("/vis_marker/Extraction_Target", 1);
@@ -210,6 +223,8 @@ search_length(0.1)
     robot2_odom_sub=robot2_odom_nh.subscribe("/robot2/odom", 1, &server_planning::robot2_odom_CB, this);
     r1_voronoi_grid_sub=r1_voronoi_map_nh.subscribe("/robot1/move_base/VoronoiPlanner/voronoi_grid", 1, &server_planning::r1_voronoi_map_CB, this);
     r2_voronoi_grid_sub=r2_voronoi_map_nh.subscribe("/robot2/move_base/VoronoiPlanner/voronoi_grid", 1, &server_planning::r2_voronoi_map_CB, this);
+    arrive1_sub = arrive1_nh.subscribe("/multi_planning_server/robot1_action/robot1/arrive_flag", 1, &server_planning::arrive1_flag, this);
+    arrive2_sub = arrive2_nh.subscribe("/multi_planning_server/robot2_action/robot2/arrive_flag", 1, &server_planning::arrive2_flag, this);
     get_param_nh.getParam("/robot1_init_x",robot1_init_x);
     get_param_nh.getParam("/robot1_init_y",robot1_init_y);
     get_param_nh.getParam("/robot2_init_x",robot2_init_x);
@@ -889,5 +904,14 @@ void server_planning::Clear_Num(void)
     robot1path_count = 0;
     robot2path_count = 0;
 }
+void server_planning::arrive1_flag(const std_msgs::Bool::ConstPtr &msg)
+{
+    arrive1 = msg -> data;
+}
+void server_planning::arrive2_flag(const std_msgs::Bool::ConstPtr &msg)
+{
+    arrive2 = msg -> data;
+}
+
 
 #endif

@@ -2,6 +2,7 @@
 #define _ROBOT2_ACTION_HPP_
 
 #include<ros/ros.h>
+#include<std_msgs/Bool.h>
 #include<move_base_msgs/MoveBaseAction.h>
 #include<actionlib/client/simple_action_client.h>
 
@@ -14,6 +15,9 @@ class robot2_action
         std::string move_base_node;
         ros::CallbackQueue robot2_queue;
         ros::Subscriber robot2_sub;
+        ros::Publisher robot2_pub;
+        std_msgs::Bool arrive_flag2;
+        bool wait_flag = false;
         robot2_action();
         ~robot2_action();
         void data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg);

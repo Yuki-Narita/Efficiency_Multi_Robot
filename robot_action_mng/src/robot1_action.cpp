@@ -6,14 +6,18 @@ robot1_action::robot1_action()
     ros::NodeHandle robot1("~/robot1/");
 	robot1.setCallbackQueue(&robot1_queue);
     robot1_sub = robot1.subscribe("/robot1/final_target", 1, &robot1_action::data_setter, this);
+	robot1_pub = robot1.advertise<std_msgs::Bool>("arrive_flag", 1);
     param1.getParam("frame_id1", frame_id);
 	param1.getParam("move_base_node1", move_base_node);
+	
 }
 robot1_action::~robot1_action(){}
 void robot1_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
 	x = msg -> pose.position.x;
 	y = msg -> pose.position.y;
+	wait_flag = true;
+
 }
 
 void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,std::string movebaseNode ){
@@ -56,9 +60,11 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	std::cout << "＊＊＊＊＊＊＊＊＊＊waitend＊＊＊＊＊＊＊＊＊＊" << std::endl;
 	if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;
+		arrive_flag1.data = true;
 	}
 	else{
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
+		arrive_flag1.data = false;
 		//return res.result;
 	}
 }
@@ -66,11 +72,22 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "robot_action");
+	std::cout << "test" << std::endl;
 	robot1_action R1A;
+	std::cout << "test" << std::endl;
     while(ros::ok())
     {
+		std::cout << "test" << std::endl;
+		R1A.arrive_flag1.data = false;
+		std::cout << "test" << std::endl;
         R1A.robot1_queue.callOne();
-        R1A.moveToGoal(R1A.x,R1A.y,R1A.frame_id,R1A.move_base_node);
+		std::cout << "test" << std::endl;
+		if(R1A.wait_flag)
+		{
+        	R1A.moveToGoal(R1A.x,R1A.y,R1A.frame_id,R1A.move_base_node);
+		}
+		R1A.wait_flag = false;
+		std::cout << "end loop" << std::endl;
     }
     return 0;
 }
