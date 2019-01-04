@@ -2,13 +2,10 @@
 
 robot1_action::robot1_action()
 {
-	ros::NodeHandle param1("~/robot1/");
-    ros::NodeHandle robot1("~/robot1/");
+
 	robot1.setCallbackQueue(&robot1_queue);
     robot1_sub = robot1.subscribe("/robot1/final_target", 1, &robot1_action::data_setter, this);
 	robot1_pub = robot1.advertise<std_msgs::Bool>("arrive_flag", 1);
-    param1.getParam("frame_id1", frame_id);
-	param1.getParam("move_base_node1", move_base_node);
 	
 }
 robot1_action::~robot1_action(){}
@@ -23,7 +20,7 @@ void robot1_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
 void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,std::string movebaseNode ){
 
 	std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標を受信＊＊＊＊＊＊＊＊＊＊" << std::endl;
-
+	std::cout << "goalX: " << goalX << " goalY: " << goalY << " mapFrame: " << mapFrame << " movebaseNode: " << movebaseNode << std::endl;
 	//define a client for to send goal requests to the move_base server through a SimpleActionClient
 
 	//actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac("robot1/move_base", true);
@@ -62,9 +59,13 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag1.data = true;
 	}
+	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED){
+		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標へのパス生成不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
+		arrive_flag1.data = true;
+	}
 	else{
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
-		arrive_flag1.data = false;
+		arrive_flag1.data = true;
 		//return res.result;
 	}
 }
@@ -74,7 +75,12 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "robot_action");
 	std::cout << "test" << std::endl;
 	robot1_action R1A;
+
 	std::cout << "test" << std::endl;
+
+	R1A.param1.getParam("/multi_planning_server/robot1_action/map_frame1",R1A.frame_id);
+	R1A.param1.getParam("/multi_planning_server/robot1_action/move_base_node1",R1A.move_base_node);
+
     while(ros::ok())
     {
 		std::cout << "test" << std::endl;
@@ -88,6 +94,7 @@ int main(int argc, char** argv)
 		}
 		R1A.wait_flag = false;
 		std::cout << "end loop" << std::endl;
+		R1A.rate.sleep();
     }
     return 0;
 }

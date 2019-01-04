@@ -16,6 +16,9 @@ class robot1_action
         ros::CallbackQueue robot1_queue;
         ros::Subscriber robot1_sub;
         ros::Publisher robot1_pub;
+        ros::NodeHandle param1;
+        ros::NodeHandle robot1;
+        ros::Rate rate = 10;
         std_msgs::Bool arrive_flag1;
         bool wait_flag=false;
         robot1_action();

@@ -19,8 +19,7 @@ class Frontier_Search
         ros::NodeHandle fp;
         ros::Subscriber subff;
         ros::Publisher pub0;
-		geometry_msgs::Pose Pose;
-		
+		geometry_msgs::Pose Pose;	
 
         //vis用
 		ros::Publisher vis_pub;		

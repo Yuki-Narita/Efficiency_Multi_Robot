@@ -105,12 +105,12 @@ find_package(catkin REQUIRED COMPONENTS
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-#catkin_package(
-#  INCLUDE_DIRS include
+catkin_package(
+  INCLUDE_DIRS include
 #  LIBRARIES multi_planning_server
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS actionlib_msgs
-#)
+)
 
 ###########
 ## Build ##

@@ -330,8 +330,8 @@ void server_planning::OptimalTarget(void)
     {
         for(int j=0; j<robot2lengths.size(); j++)
         {
-                cout << "robot1lengths[" << i << "]: " << std::get<1>(robot1lengths[i]) << endl;
-                cout << "robot2lengths[" << j << "]: " << std::get<1>(robot2lengths[j]) << endl;
+                //cout << "robot1lengths[" << i << "]: " << std::get<1>(robot1lengths[i]) << endl;
+                //cout << "robot2lengths[" << j << "]: " << std::get<1>(robot2lengths[j]) << endl;
             if(min_length >= std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]) && 0 != std::get<1>(robot1lengths[i]) && 0 != std::get<1>(robot2lengths[i]))
             {
                 min_length = std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]);

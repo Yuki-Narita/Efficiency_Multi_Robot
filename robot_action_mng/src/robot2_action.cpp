@@ -2,13 +2,9 @@
 
 robot2_action::robot2_action()
 {
-	ros::NodeHandle param2("~/robot2/");
-    ros::NodeHandle robot2("~/robot2/");
 	robot2.setCallbackQueue(&robot2_queue);
     robot2_sub = robot2.subscribe("/robot2/final_target", 1, &robot2_action::data_setter, this);
 	robot2_pub = robot2.advertise<std_msgs::Bool>("arrive_flag", 1);
-    param2.getParam("frame_id2", frame_id);
-	param2.getParam("move_base_node2", move_base_node);
 }
 robot2_action::~robot2_action(){}
 void robot2_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
@@ -60,9 +56,13 @@ void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag2.data = true;
 	}
+	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED){
+		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標へのパス生成不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
+		arrive_flag2.data = true;
+	}
 	else{
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
-		arrive_flag2.data = false;
+		arrive_flag2.data = true;
 		//return res.result;
 	}
 }
@@ -71,7 +71,11 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "robot_action");
 	robot2_action R2A;
-    while(ros::ok())
+
+	R2A.param2.getParam("/multi_planning_server/robot2_action/map_frame2", R2A.frame_id);
+	R2A.param2.getParam("/multi_planning_server/robot2_action/move_base_node2", R2A.move_base_node);
+	
+	while(ros::ok())
     {
 		R2A.arrive_flag2.data = false;
         R2A.robot2_queue.callOne();
@@ -79,6 +83,8 @@ int main(int argc, char** argv)
 		{
         	R2A.moveToGoal(R2A.x,R2A.y,R2A.frame_id,R2A.move_base_node);
 		}
+		R2A.wait_flag = false;
+		R2A.rate.sleep();
     }
     return 0;
 }
