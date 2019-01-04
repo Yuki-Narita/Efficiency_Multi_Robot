@@ -1,15 +1,20 @@
 #include <multi_planning_server/Frontier_Search.hpp>
 
+using std::cout;
+using std::endl;
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "Frontier_Search");
 
     Frontier_Search FS;
-
+    cout << "Frontier start." << endl;
+    
     while(ros::ok())
     {
+        cout << "test1" << endl;
         FS.queueF.callOne(ros::WallDuration(1));
-
+        cout << "test2" << endl;
         if(FS.isinput())
         {
             //ここにＦｒｏｎｔｉｅｒ＿Ｓｅａｒｃｈの一連の処理に必要な関数を書く
@@ -24,16 +29,19 @@ int main(int argc, char **argv)
             FS.Publish_Data();
             FS.Publish_marker();
             FS.Memory_release();
+            FS.Clear_Vector();
         }
         else
         {
+            cout << "else done." << endl;
             if(!FS.isinput())
             {
                 std::cout << "not input isinput" << std::endl; 
             }
         }
+        cout << "reset part." << endl;
         FS.resetFlag();
     }
-
+    cout << "frontier end." << endl;
     return 0;
 }

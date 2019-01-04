@@ -1,19 +1,20 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(multi_planning_server)
-set(CMAKE_BUILD_TYPE Debug)
+project(robot_action_mng)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+# add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  actionlib_msgs
+  actionlib
+  move_base_msgs
+  geometry_msgs
   roscpp
   rospy
   std_msgs
-  nav_msgs
-  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -73,7 +74,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   actionlib_msgs#   geometry_msgs#   std_msgs
 # )
 
 ################################################
@@ -106,10 +107,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-#  LIBRARIES multi_planning_server
-#  CATKIN_DEPENDS roscpp rospy std_msgs
-#  DEPENDS actionlib_msgs
+#  INCLUDE_DIRS include
+#  LIBRARIES robot_action_mng
+#  CATKIN_DEPENDS actionlib_msgs geometry_msgs roscpp rospy std_msgs
+#  DEPENDS system_lib
 )
 
 ###########
@@ -125,7 +126,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/multi_planning_server.cpp
+#   src/${PROJECT_NAME}/robot_action_mng.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -136,7 +137,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/multi_planning_server.cpp)
+# add_executable(${PROJECT_NAME}_node src/robot_action_mng_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -193,7 +194,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_multi_planning_server.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_robot_action_mng.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
@@ -201,12 +202,7 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-
-add_executable(Frontier_Search src/Frontier_Search.cpp)
-target_link_libraries(Frontier_Search ${catkin_LIBRARIES})
-add_executable(server_planning src/server_planning.cpp)
-target_link_libraries(server_planning ${catkin_LIBRARIES})
-add_executable(costmap_publisher src/costmap_publisher.cpp)
-target_link_libraries(costmap_publisher ${catkin_LIBRARIES})
-#add_executable(Dijkstra src/Dijkstra.cpp)
-#target_link_libraries(Dijkstra ${catkin_LIBRARIES}) 
+add_executable(robot1_action src/robot1_action.cpp)
+target_link_libraries(robot1_action ${catkin_LIBRARIES})
+add_executable(robot2_action src/robot2_action.cpp)
+target_link_libraries(robot2_action ${catkin_LIBRARIES})

@@ -1,0 +1,12 @@
+<launch>
+    <arg name="robot_name1" default="robot1"/>
+    <arg name="robot_name2" default="robot2"/>
+    <node pkg="robot_action_mng" type="robot1_action" name="$(arg robot_name1)_action" output="screen" launch-prefix="xterm -e">
+        <param name="move_base_node1" value="/$(arg robot_name1)/move_base"/>
+        <param name="map_frame1" value="$(arg robot_name1)/map"/>
+    </node>
+    <node pkg="robot_action_mng" type="robot2_action" name="$(arg robot_name2)_action" output="screen" launch-prefix="xterm -e">
+        <param name="move_base_node2" value="/$(arg robot_name2)/move_base"/>
+        <param name="map_frame2" value="$(arg robot_name2)/map"/>
+    </node>
+</launch>

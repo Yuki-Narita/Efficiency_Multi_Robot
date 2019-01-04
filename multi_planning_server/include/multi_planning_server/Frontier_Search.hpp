@@ -8,6 +8,8 @@
 #include <vector>
 #include <iostream>
 
+using std::cout;
+using std::endl;
 
 class Frontier_Search
 {
@@ -17,13 +19,12 @@ class Frontier_Search
         ros::NodeHandle fp;
         ros::Subscriber subff;
         ros::Publisher pub0;
-		geometry_msgs::Pose Pose;
-		geometry_msgs::PoseArray poseArray;
+		geometry_msgs::Pose Pose;	
 
         //vis用
 		ros::Publisher vis_pub;		
 		ros::NodeHandle vis;
-		visualization_msgs::Marker marker;
+		//visualization_msgs::Marker marker;
         //
 
         //const nav_msgs::MapMetaData msg.info;
@@ -37,8 +38,8 @@ class Frontier_Search
     	float robot_diameter; //ロボットの直径は0.4[m]
     	int search_len_cell;//セル換算した正方形の一辺の長さ
     	int robot_cellsize;//セル換算したロボットサイズ
-    	float low_left_x;//地図の左下のx座標
-    	float low_left_y;//地図の左下のy座標
+    	float low_left_x;//マップ中心から地図の左下までのx座標
+    	float low_left_y;//マップ中心から地図の左下までのy座標
     	int half_sq;//正方形の一辺の半分の長さ(セル)
 
 
@@ -89,9 +90,10 @@ class Frontier_Search
     	search_width(3)
 		{
 			ff.setCallbackQueue(&queueF);
-    		subff = ff.subscribe("/map", 1, &Frontier_Search::FSinput, this);
+    		subff = ff.subscribe("/server/grid_map_merge/merge_map", 1, &Frontier_Search::FSinput, this); //購読先がグローバルマップ
+			//subff = ff.subscribe("/robot2/move_base/local_costmap/costmap", 1, &Frontier_Search::FSinput, this); //購読先がコストマップ
     		pub0 = fp.advertise<geometry_msgs::PoseArray>("/Frontier_Target", 1);
-			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker", 1);
+			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker/Frontier", 1);
 			std::cout << "search_len :" << search_len << std::endl;
 			std::cout << "robot_diameter:" << robot_diameter << std::endl;
 			std::cout << "pre_fronum:" << pre_fronum << std::endl;
@@ -115,10 +117,27 @@ class Frontier_Search
         void Publish_Data(void);//計算した結果をパブリッシャー用に変換する関数。
 		void Publish_marker(void);
 		void Memory_release(void);
+		void Clear_Vector(void);
 };
 
 Frontier_Search::~Frontier_Search()
 {}
+
+void Frontier_Search::Clear_Vector(void)
+{
+	pre_frox.clear();
+	pre_frox.shrink_to_fit();
+
+	pre_froy.clear();
+	pre_froy.shrink_to_fit();
+
+	fro_x.clear();
+	fro_x.shrink_to_fit();
+
+	fro_y.clear();
+	fro_y.shrink_to_fit();
+}
+
 void Frontier_Search::Memory_release(void)
 {
 		for(int p=0;p<x;p++){
@@ -167,16 +186,16 @@ void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid& msg)
 	std::cout << "start:地図データを配列に格納" << std::endl;
 	std::cout << "X:" << x << "Y:" << y << "K:" << k << std::endl; 
 	for(i=0;i<y;i++){
-    		for(j=0;j<x;j++){
-      			map_array[j][i] = msg.data[k];
-				if(map_array[j][i]!=0 && map_array[j][i]!=100 && map_array[j][i]!=-1)
-				{	
-					std::cout << "exception:" << map_array[j][i] << std::endl;		
-				}
-				frontier_flag[j][i] = 0;
-				point[j][i] = 0;
-      			k++;
-    		}
+    	for(j=0;j<x;j++){
+      		map_array[j][i] = msg.data[k];
+			if(map_array[j][i]!=0 && map_array[j][i]!=100 && map_array[j][i]!=-1)
+			{	
+				//std::cout << "exception:" << map_array[j][i] << std::endl;		
+			}
+			frontier_flag[j][i] = 0;
+			point[j][i] = 0;
+      		k++;
+    	}
   	}
 	
 	std::cout << "end  :地図データを配列に格納" << std::endl;
@@ -222,11 +241,11 @@ void Frontier_Search::Search_Obstacle(void)
 	std::cout << "start:未探査領域周辺の障害物を検索" << std::endl;
 	std::cout << "pre_fronum:" << pre_fronum << std::endl;
     for(k=0;k<pre_fronum;k++){
-		std::cout << "pre_frox[k]:" << pre_frox[k] << std::endl;
+		//std::cout << "pre_frox[k]:" << pre_frox[k] << std::endl;
 		if(pre_frox[k]-half_sq < 0){
-			std::cout << "half_leftx:" << half_leftx << std::endl;
+			//std::cout << "half_leftx:" << half_leftx << std::endl;
 			half_leftx = pre_frox[k];
-			std::cout << "half_leftx:" << half_leftx << std::endl;
+			//std::cout << "half_leftx:" << half_leftx << std::endl;
 		}
 		else{
 			half_leftx = half_sq;
@@ -252,18 +271,19 @@ void Frontier_Search::Search_Obstacle(void)
 		if(pre_froy[k]+half_sq > (y-1)){
 			half_bottomy = (y-1)-pre_froy[k];
 		}
-		else{
+		else
+		{
 			half_bottomy = half_sq;
 		}
 		
 		frontier_sum = 0;
-		std::cout << "previent frontier_sum:" << frontier_sum << std::endl;
+		//std::cout << "previent frontier_sum:" << frontier_sum << std::endl;
 		for(i=(pre_froy[k]-half_topy);i<(pre_froy[k]+half_bottomy+1);i++){
 			for(j=(pre_frox[k]-half_leftx);j<(pre_frox[k]+half_rightx+1);j++){
 				frontier_sum+=point[j][i];
 			}
 		}
-		std::cout << "after frontier_sum:" << frontier_sum << std::endl;
+		//std::cout << "after frontier_sum:" << frontier_sum << std::endl;
 
 		if(frontier_sum>100){
 			point[pre_frox[k]][pre_froy[k]] = 0;
@@ -294,10 +314,11 @@ void Frontier_Search::Search_Obstacle(void)
 
 void Frontier_Search::Publish_Data(void)
 {
+	geometry_msgs::PoseArray poseArray;
 	for(int i=0; i<fro_num; i++)
 	{
 		poseArray.header.stamp = ros::Time::now();
-		poseArray.header.frame_id = "map";
+		poseArray.header.frame_id = "/server/merge_map";
 		Pose.position.x = fro_x[i];
 		Pose.position.y = fro_y[i];
 		Pose.orientation.x = 0.0;
@@ -305,40 +326,42 @@ void Frontier_Search::Publish_Data(void)
 		Pose.orientation.z = 0.0;
 		Pose.orientation.w = 1.0;
 		//std::cout << "fro_x:" << Pose.pose.position.x << "fro_y:" << Pose.pose.position.y << std::endl;
-		poseArray.poses[i] = Pose;
+		poseArray.poses.push_back(Pose);
 	}
 	pub0.publish(poseArray);
+	cout << "pose size: " << poseArray.poses.size() << endl;
 }
 
 void Frontier_Search::Publish_marker(void)
 {
-        uint32_t shape = visualization_msgs::Marker::CUBE_LIST;
-        marker.header.frame_id = "map";
-        marker.header.stamp = ros::Time::now();
-        marker.ns = "Frontier";
-        marker.id = 0;
-        marker.type = shape;
-        marker.action = visualization_msgs::Marker::ADD;
-		
-        marker.lifetime = ros::Duration();
+	visualization_msgs::Marker marker;
+	uint32_t shape = visualization_msgs::Marker::CUBE_LIST;
+	marker.header.frame_id = "/server/merge_map";
+	marker.header.stamp = ros::Time::now();
+	marker.ns = "Frontier";
+	marker.id = 0;
+	marker.type = shape;
+	marker.action = visualization_msgs::Marker::ADD;
+	
+	marker.lifetime = ros::Duration();
 
-        marker.scale.x = 0.05;
-        marker.scale.y = 0.05;
-        marker.scale.z = 0.05;
-        
-        marker.color.r = 0.0f;
-        marker.color.g = 1.0f;
-        marker.color.b = 0.0f;
-        marker.color.a = 1.0f;
+	marker.scale.x = 0.05;
+	marker.scale.y = 0.05;
+	marker.scale.z = 0.05;
+	
+	marker.color.r = 0.0f;
+	marker.color.g = 1.0f;
+	marker.color.b = 0.0f;
+	marker.color.a = 1.0f;
 
-		geometry_msgs::Point p;
-		for(int i=0; i < fro_num;i++)
-		{
-			p.x = fro_x[i];
-			p.y = fro_y[i];
-			marker.points.push_back(p);
-		}
-		vis_pub.publish(marker);
+	geometry_msgs::Point p;
+	for(int i=0; i < fro_num;i++)
+	{
+		p.x = fro_x[i];
+		p.y = fro_y[i];
+		marker.points.push_back(p);
+	}
+	vis_pub.publish(marker);
 
 }
 
@@ -379,9 +402,9 @@ void Frontier_Search::Vatical_Search(void)
         		else if(map_array[j][i] == -1 && map_array[j][i+1] == 0){
 				frontier_flag[j][i+1] = 1;	
 			}
-			std::cout << frontier_flag[j][i];
+			//std::cout << frontier_flag[j][i];
     		}
-			std::cout << std::endl;
+			//std::cout << std::endl;
   	}
 
 	std::cout << "end  :縦方向で境界を検索" << std::endl;
@@ -400,6 +423,7 @@ void Frontier_Search::Vatical_Continuity_Search(void)
 			}
 			if(frontier_sum > 0){
 				start_k = k;
+				continuity = 0;
 				while(frontier_sum > 0 && ros::ok()){
 					frontier_sum = 0;
 					continuity++;
@@ -416,6 +440,7 @@ void Frontier_Search::Vatical_Continuity_Search(void)
 				}
 				end_k = k-1;
 				if(continuity >= robot_cellsize){
+					//std::cout << "Vatical_Continuity << " << continuity << ", start_k << " << start_k << ", end_k << " << end_k << std::endl;
 					frontier_center = (start_k + end_k)/2;
 					flo2int = frontier_center;
 					point[j][flo2int] = 1;
@@ -452,6 +477,7 @@ void Frontier_Search::Side_Continuity_Search(void)
 			}
 			if(frontier_sum > 0){
 				start_k = k;
+				continuity = 0;
 				while(frontier_sum > 0 && ros::ok()){
 					frontier_sum = 0;
 					continuity++;
@@ -469,6 +495,7 @@ void Frontier_Search::Side_Continuity_Search(void)
 				}
 				end_k = k-1;
 				if(continuity >= robot_cellsize){
+					//std::cout << "Side_Continuity << " << continuity << ", start_k << " << start_k << ", end_k << " << end_k << std::endl;
 					frontier_center = (start_k + end_k)/2;
 					flo2int = frontier_center;
 					point[flo2int][i] = 1;
@@ -495,7 +522,7 @@ void Frontier_Search::Add_Obstacle(void)
     		for(i=0;i<y;i++){
       			if(map_array[j][i] == 100){
 	       			point[j][i] = 100;
-			}
+				}
     		}
   	}
 	std::cout << "end  :障害物情報を追加" << std::endl;
