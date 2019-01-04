@@ -134,9 +134,12 @@ int main(int argc, char **argv)
                     SP.arrive2_queue.callOne();
                     cout << "SP.arrive1:" << SP.arrive1 << endl;
                     cout << "SP.arrive2:" << SP.arrive2 << endl;
+                    sleep(0.1);
                 }
                 SP.r1_voronoi_map_update = false;
                 SP.r2_voronoi_map_update = false;
+                SP.arrive1 = false;
+                SP.arrive2 = false;
             }
             else
             {

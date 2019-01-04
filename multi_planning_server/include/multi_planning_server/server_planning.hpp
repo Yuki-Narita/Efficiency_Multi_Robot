@@ -906,11 +906,17 @@ void server_planning::Clear_Num(void)
 }
 void server_planning::arrive1_flag(const std_msgs::Bool::ConstPtr &msg)
 {
+    cout << "arrive1_flag start" << endl;
     arrive1 = msg -> data;
+    cout << "arrive1_flag: " << arrive1_flag << endl;
+    cout << "arrive1_flag end" << endl;
 }
 void server_planning::arrive2_flag(const std_msgs::Bool::ConstPtr &msg)
 {
+    cout << "arrive2_flag start" << endl;
     arrive2 = msg -> data;
+    cout << "arrive2_flag: " << arrive2_flag << endl;
+    cout << "arrive2_flag end" << endl;
 }
 
 
