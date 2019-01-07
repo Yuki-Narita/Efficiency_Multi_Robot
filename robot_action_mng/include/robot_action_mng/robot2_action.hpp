@@ -2,7 +2,7 @@
 #define _ROBOT2_ACTION_HPP_
 
 #include<ros/ros.h>
-#include<std_msgs/Bool.h>
+#include<std_msgs/Int8.h>
 #include<move_base_msgs/MoveBaseAction.h>
 #include<actionlib/client/simple_action_client.h>
 
@@ -21,7 +21,7 @@ class robot2_action
         ros::NodeHandle robot2_pub_nh;
         ros::NodeHandle robot2_sub_nh;
         ros::Rate rate = 10;
-        std_msgs::Bool arrive_flag2;
+        std_msgs::Int8 arrive_flag2;
         bool wait_flag = false;
         robot2_action();
         ~robot2_action();

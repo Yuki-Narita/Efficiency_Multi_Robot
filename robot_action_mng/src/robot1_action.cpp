@@ -6,7 +6,7 @@ robot1_action::robot1_action()
 	robot1_pub_nh.setCallbackQueue(&robot1_pub_queue);
 	robot1_sub_nh.setCallbackQueue(&robot1_sub_queue);
     robot1_sub = robot1_sub_nh.subscribe("/robot1/final_target", 1, &robot1_action::data_setter, this);
-	robot1_pub = robot1_pub_nh.advertise<std_msgs::Bool>("/arrive_flag1", 1);
+	robot1_pub = robot1_pub_nh.advertise<std_msgs::Int8>("/arrive_flag1", 1);
 	
 }
 robot1_action::~robot1_action(){}
@@ -15,7 +15,6 @@ void robot1_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	x = msg -> pose.position.x;
 	y = msg -> pose.position.y;
 	wait_flag = true;
-
 }
 
 void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,std::string movebaseNode ){
@@ -58,17 +57,17 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	std::cout << "＊＊＊＊＊＊＊＊＊＊waitend＊＊＊＊＊＊＊＊＊＊" << std::endl;
 	if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;
-		arrive_flag1.data = true;
+		arrive_flag1.data = 1;
 		robot1_pub.publish(arrive_flag1);
 	}
 	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標へのパス生成不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
-		arrive_flag1.data = true;
+		arrive_flag1.data = 2;
 		robot1_pub.publish(arrive_flag1);
 	}
 	else{
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
-		arrive_flag1.data = true;
+		arrive_flag1.data = 3;
 		robot1_pub.publish(arrive_flag1);
 		//return res.result;
 	}

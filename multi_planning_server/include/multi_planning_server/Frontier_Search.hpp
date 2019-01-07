@@ -90,8 +90,8 @@ class Frontier_Search
     	search_width(3)
 		{
 			ff.setCallbackQueue(&queueF);
-    		subff = ff.subscribe("/server/grid_map_merge/merge_map", 1, &Frontier_Search::FSinput, this); //購読先がグローバルマップ
-			//subff = ff.subscribe("/robot2/move_base/local_costmap/costmap", 1, &Frontier_Search::FSinput, this); //購読先がコストマップ
+    		//subff = ff.subscribe("/server/grid_map_merge/merge_map", 1, &Frontier_Search::FSinput, this); //購読先がグローバルマップ
+			subff = ff.subscribe("/robot2/move_base/local_costmap/costmap", 1, &Frontier_Search::FSinput, this); //購読先がコストマップ
     		pub0 = fp.advertise<geometry_msgs::PoseArray>("/Frontier_Target", 1);
 			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker/Frontier", 1);
 			std::cout << "search_len :" << search_len << std::endl;

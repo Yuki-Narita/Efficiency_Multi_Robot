@@ -3,7 +3,7 @@
 
 #include<ros/ros.h>
 #include<ros/callback_queue.h>
-#include<std_msgs/Bool.h>
+#include<std_msgs/Int8.h>
 #include<geometry_msgs/PoseStamped.h>
 #include<geometry_msgs/PoseArray.h>
 #include<nav_msgs/Path.h>
@@ -56,6 +56,8 @@ class server_planning
     int robot2path_count=0;
     std::vector<int> frontier_x;
     std::vector<int> frontier_y;
+    std::vector<geometry_msgs::PoseStamped> final_target1_update;
+    std::vector<geometry_msgs::PoseStamped> final_target2_update;
     std::vector<geometry_msgs::PoseStamped> robot1TARGET;//抽出後のロボット１への目的地
     std::vector<geometry_msgs::PoseStamped> robot2TARGET;//抽出後のロボット２への目的地
     ros::Rate rate=10;
@@ -115,8 +117,9 @@ class server_planning
     void Publish_marker(void);//ボロノイ図を使ってフロンティアから抽出した目的地の情報をrviz上で視覚的に確認できるようにするマーカー。
     void Clear_Vector(void);
     void Clear_Num(void);//カウント初期化用
-    void arrive1_flag(const std_msgs::Bool::ConstPtr &msg);
-    void arrive2_flag(const std_msgs::Bool::ConstPtr &msg);
+    void arrive1_flag(const std_msgs::Int8::ConstPtr &msg);
+    void arrive2_flag(const std_msgs::Int8::ConstPtr &msg);
+    int update_target(bool reset);
 
     ros::Subscriber path_sub1;
     ros::Subscriber path_sub2;
@@ -181,8 +184,8 @@ class server_planning
     bool r2_voronoi_map_update=false;
     bool queueF_judge=false;
     bool odom_queue_flag=false;
-    bool arrive1;
-    bool arrive2;
+    int arrive1;
+    int arrive2;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target_r1;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target_r2;
     std::string tmp_name;
@@ -337,10 +340,16 @@ void server_planning::OptimalTarget(void)
                 min_length = std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]);
                 final_target1.pose.position.x = std::get<2>(robot1lengths[i]);
                 final_target1.pose.position.y = std::get<3>(robot1lengths[i]);
+                final_target1.header.frame_id = robot1header;
+                final_target1.pose.orientation.w = 0.1;
+                final_target1_update.push_back(final_target1);
                 cout << "robot1lengths frontier_x: " << std::get<2>(robot1lengths[i]) << endl;
                 cout << "robot1lengths frontier_y: " << std::get<3>(robot1lengths[i]) << endl;
                 final_target2.pose.position.x = std::get<2>(robot2lengths[i]);
                 final_target2.pose.position.y = std::get<3>(robot2lengths[i]);
+                final_target2.header.frame_id = robot2header;
+                final_target2.pose.orientation.w = 0.1;
+                final_target2_update.push_back(final_target2);
                 cout << "robot2lengths frontier_x: " << std::get<2>(robot2lengths[i]) << endl;
                 cout << "robot2lengths frontier_y: " << std::get<3>(robot2lengths[i]) << endl;
                 cout << "test" << endl; 
@@ -348,14 +357,10 @@ void server_planning::OptimalTarget(void)
         }
     }
     cout << "min_length: " << min_length << endl;
-    final_target1.header.frame_id = robot1header;
-    final_target2.header.frame_id = robot2header;
-    final_target1.pose.orientation.w = 0.1;
-    final_target2.pose.orientation.w = 0.1;
     cout << "final_target1:" << final_target1 << endl;
     cout << "final_target2:" << final_target2 << endl;
-    robot1_final_target_pub.publish(final_target1);
-    robot2_final_target_pub.publish(final_target2);
+    robot1_final_target_pub.publish(final_target1_update[0]);
+    robot2_final_target_pub.publish(final_target2_update[0]);
     cout << "[OptimalTarget]----------------------------------------" << endl;
 }
 void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
@@ -897,6 +902,10 @@ void server_planning::Clear_Vector(void)
     robot1TARGET.shrink_to_fit();
     robot2TARGET.clear();
     robot2TARGET.shrink_to_fit();
+    final_target1_update.clear();
+	final_target1_update.shrink_to_fit();
+    final_target2_update.clear();
+	final_target2_update.shrink_to_fit();
 }
 
 void server_planning::Clear_Num(void)
@@ -904,20 +913,32 @@ void server_planning::Clear_Num(void)
     robot1path_count = 0;
     robot2path_count = 0;
 }
-void server_planning::arrive1_flag(const std_msgs::Bool::ConstPtr &msg)
+void server_planning::arrive1_flag(const std_msgs::Int8::ConstPtr &msg)
 {
     cout << "arrive1_flag start" << endl;
     arrive1 = msg -> data;
     cout << "arrive1_flag: " << arrive1 << endl;
     cout << "arrive1_flag end" << endl;
 }
-void server_planning::arrive2_flag(const std_msgs::Bool::ConstPtr &msg)
+void server_planning::arrive2_flag(const std_msgs::Int8::ConstPtr &msg)
 {
     cout << "arrive2_flag start" << endl;
     arrive2 = msg -> data;
     cout << "arrive2_flag: " << arrive2 << endl;
     cout << "arrive2_flag end" << endl;
 }
-
+ int server_planning::update_target(bool reset)
+ {
+    static int update_target_count = 1;
+    if(reset == true)
+    {
+        update_target_count = 1;
+        return 0;
+    }
+    robot1_final_target_pub.publish(final_target1_update[update_target_count]);
+    robot2_final_target_pub.publish(final_target2_update[update_target_count]);
+    update_target_count++;
+    return 0;
+ }
 
 #endif

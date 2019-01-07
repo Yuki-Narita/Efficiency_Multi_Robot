@@ -138,8 +138,18 @@ int main(int argc, char **argv)
                     cout << "SP.arrive2:" << SP.arrive2 << endl;
                     sleep(0.1);
                 }
+                if(SP.arrive1 == 1 || SP.arrive2 == 1){}
+                else if(SP.arrive1 == 2 || SP.arrive2 == 2)
+                {
+                    SP.update_target(false);
+                }
+                else if(SP.arrive1 == 3 || SP.arrive2 == 3)
+                {
+                    SP.update_target(false);
+                }
                 SP.r1_voronoi_map_update = false;
                 SP.r2_voronoi_map_update = false;
+                SP.update_target(true);
             }
             else
             {
