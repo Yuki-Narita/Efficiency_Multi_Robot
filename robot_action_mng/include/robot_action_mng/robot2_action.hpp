@@ -13,11 +13,13 @@ class robot2_action
         double y;
         std::string frame_id;
         std::string move_base_node;
-        ros::CallbackQueue robot2_queue;
+        ros::CallbackQueue robot2_sub_queue;
+        ros::CallbackQueue robot2_pub_queue;
         ros::Subscriber robot2_sub;
         ros::Publisher robot2_pub;
         ros::NodeHandle param2;
-        ros::NodeHandle robot2;
+        ros::NodeHandle robot2_pub_nh;
+        ros::NodeHandle robot2_sub_nh;
         ros::Rate rate = 10;
         std_msgs::Bool arrive_flag2;
         bool wait_flag = false;

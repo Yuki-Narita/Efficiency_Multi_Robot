@@ -3,9 +3,10 @@
 robot1_action::robot1_action()
 {
 
-	robot1.setCallbackQueue(&robot1_queue);
-    robot1_sub = robot1.subscribe("/robot1/final_target", 1, &robot1_action::data_setter, this);
-	robot1_pub = robot1.advertise<std_msgs::Bool>("arrive_flag", 1);
+	robot1_pub_nh.setCallbackQueue(&robot1_pub_queue);
+	robot1_sub_nh.setCallbackQueue(&robot1_sub_queue);
+    robot1_sub = robot1_sub_nh.subscribe("/robot1/final_target", 1, &robot1_action::data_setter, this);
+	robot1_pub = robot1_pub_nh.advertise<std_msgs::Bool>("/arrive_flag1", 1);
 	
 }
 robot1_action::~robot1_action(){}
@@ -58,14 +59,17 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag1.data = true;
+		robot1_pub.publish(arrive_flag1);
 	}
 	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標へのパス生成不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag1.data = true;
+		robot1_pub.publish(arrive_flag1);
 	}
 	else{
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag1.data = true;
+		robot1_pub.publish(arrive_flag1);
 		//return res.result;
 	}
 }
@@ -83,17 +87,13 @@ int main(int argc, char** argv)
 
     while(ros::ok())
     {
-		std::cout << "test" << std::endl;
 		R1A.arrive_flag1.data = false;
-		std::cout << "test" << std::endl;
-        R1A.robot1_queue.callOne();
-		std::cout << "test" << std::endl;
+        R1A.robot1_sub_queue.callOne();
 		if(R1A.wait_flag)
 		{
         	R1A.moveToGoal(R1A.x,R1A.y,R1A.frame_id,R1A.move_base_node);
 		}
 		R1A.wait_flag = false;
-		std::cout << "end loop" << std::endl;
 		R1A.rate.sleep();
     }
     return 0;

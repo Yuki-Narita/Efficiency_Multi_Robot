@@ -119,7 +119,7 @@ int main(int argc, char **argv)
             //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
             cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
             cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
-            if(SP.r1_voronoi_map_update && SP.r2_voronoi_map_update)
+            if(SP.r1_voronoi_map_update || SP.r2_voronoi_map_update)
             {
                 cout << "r1 and r2 voronoi_map_update" << endl;
                 SP.Extraction_Target();
@@ -128,7 +128,9 @@ int main(int argc, char **argv)
                 SP.queue1.callAvailable();
                 SP.queue2.callAvailable();
                 SP.OptimalTarget();
-                while((!SP.arrive1 && !SP.arrive2 )&& ros::ok())
+                SP.arrive1 = false;
+                SP.arrive2 = false;
+                while(SP.arrive1 == 0 && SP.arrive2 == 0 && ros::ok())
                 {
                     SP.arrive1_queue.callOne();
                     SP.arrive2_queue.callOne();
@@ -138,8 +140,6 @@ int main(int argc, char **argv)
                 }
                 SP.r1_voronoi_map_update = false;
                 SP.r2_voronoi_map_update = false;
-                SP.arrive1 = false;
-                SP.arrive2 = false;
             }
             else
             {

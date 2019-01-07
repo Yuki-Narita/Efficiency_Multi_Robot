@@ -223,8 +223,8 @@ search_length(0.1)
     robot2_odom_sub=robot2_odom_nh.subscribe("/robot2/odom", 1, &server_planning::robot2_odom_CB, this);
     r1_voronoi_grid_sub=r1_voronoi_map_nh.subscribe("/robot1/move_base/VoronoiPlanner/voronoi_grid", 1, &server_planning::r1_voronoi_map_CB, this);
     r2_voronoi_grid_sub=r2_voronoi_map_nh.subscribe("/robot2/move_base/VoronoiPlanner/voronoi_grid", 1, &server_planning::r2_voronoi_map_CB, this);
-    arrive1_sub = arrive1_nh.subscribe("/multi_planning_server/robot1_action/robot1/arrive_flag", 1, &server_planning::arrive1_flag, this);
-    arrive2_sub = arrive2_nh.subscribe("/multi_planning_server/robot2_action/robot2/arrive_flag", 1, &server_planning::arrive2_flag, this);
+    arrive1_sub = arrive1_nh.subscribe("/arrive_flag1", 1, &server_planning::arrive1_flag, this);
+    arrive2_sub = arrive2_nh.subscribe("/arrive_flag2", 1, &server_planning::arrive2_flag, this);
     get_param_nh.getParam("/robot1_init_x",robot1_init_x);
     get_param_nh.getParam("/robot1_init_y",robot1_init_y);
     get_param_nh.getParam("/robot2_init_x",robot2_init_x);

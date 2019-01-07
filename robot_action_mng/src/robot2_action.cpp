@@ -2,9 +2,10 @@
 
 robot2_action::robot2_action()
 {
-	robot2.setCallbackQueue(&robot2_queue);
-    robot2_sub = robot2.subscribe("/robot2/final_target", 1, &robot2_action::data_setter, this);
-	robot2_pub = robot2.advertise<std_msgs::Bool>("arrive_flag", 1);
+	robot2_pub_nh.setCallbackQueue(&robot2_pub_queue);
+	robot2_sub_nh.setCallbackQueue(&robot2_sub_queue);
+    robot2_sub = robot2_sub_nh.subscribe("/robot2/final_target", 1, &robot2_action::data_setter, this);
+	robot2_pub = robot2_pub_nh.advertise<std_msgs::Bool>("/arrive_flag2", 1);
 }
 robot2_action::~robot2_action(){}
 void robot2_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
@@ -17,6 +18,7 @@ void robot2_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
 void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,std::string movebaseNode ){
 
 	std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標を受信＊＊＊＊＊＊＊＊＊＊" << std::endl;
+	std::cout << "goalX: " << goalX << " goalY: " << goalY << " mapFrame: " << mapFrame << " movebaseNode: " << movebaseNode << std::endl;
 
 	//define a client for to send goal requests to the move_base server through a SimpleActionClient
 
@@ -55,14 +57,17 @@ void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag2.data = true;
+		robot2_pub.publish(arrive_flag2);
 	}
 	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標へのパス生成不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag2.data = true;
+		robot2_pub.publish(arrive_flag2);
 	}
 	else{
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag2.data = true;
+		robot2_pub.publish(arrive_flag2);
 		//return res.result;
 	}
 }
@@ -78,7 +83,7 @@ int main(int argc, char** argv)
 	while(ros::ok())
     {
 		R2A.arrive_flag2.data = false;
-        R2A.robot2_queue.callOne();
+        R2A.robot2_sub_queue.callOne();
 		if(R2A.wait_flag)
 		{
         	R2A.moveToGoal(R2A.x,R2A.y,R2A.frame_id,R2A.move_base_node);
