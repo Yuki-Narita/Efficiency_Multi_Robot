@@ -128,9 +128,9 @@ int main(int argc, char **argv)
                 SP.queue1.callAvailable();
                 SP.queue2.callAvailable();
                 SP.OptimalTarget();
-                SP.arrive1 = false;
-                SP.arrive2 = false;
-                while(SP.cant_find_final_target_flag == 0)
+                SP.arrive1 = 0;
+                SP.arrive2 = 0;
+                while(SP.cant_find_final_target_flag == 0 && ros::ok())
                 {
                     while(SP.arrive1 == 0 && SP.arrive2 == 0 && ros::ok())
                     {
@@ -138,20 +138,30 @@ int main(int argc, char **argv)
                         SP.arrive2_queue.callOne();
                         cout << "SP.arrive1:" << SP.arrive1 << endl;
                         cout << "SP.arrive2:" << SP.arrive2 << endl;
+                        cout << "test" << endl;
                         sleep(0.1);
                     }
-                    if(SP.arrive1 == 1 || SP.arrive2 == 1){}
+                    if(SP.arrive1 == 1 || SP.arrive2 == 1)
+                    {
+                        cout << "1 or 1" << endl;
+                        break;
+                    }
                     else if(SP.arrive1 == 2 || SP.arrive2 == 2)
                     {
+                        cout << "2 or 2" << endl;
                         SP.update_target(false);
                     }
                     else if(SP.arrive1 == 3 || SP.arrive2 == 3)
                     {
+                        cout << "3 or 3" << endl;
                         SP.update_target(false);
                     }
+                    SP.arrive1 = 0;
+                    SP.arrive2 = 0;
                 }
                 SP.r1_voronoi_map_update = false;
                 SP.r2_voronoi_map_update = false;
+                SP.cant_find_final_target_flag = false;
                 SP.update_target(true);
             }
             else

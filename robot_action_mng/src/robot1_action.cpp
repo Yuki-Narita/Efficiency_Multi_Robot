@@ -25,6 +25,7 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 
 	//actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac("robot1/move_base", true);
 	actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(movebaseNode, true);
+	
 
 	//wait for the action server to come up//5.0秒まで待つ
 	while(!ac.waitForServer(ros::Duration(5.0)) && ros::ok()){
@@ -53,7 +54,11 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	std::cout << "＊＊＊＊＊＊＊＊＊＊経路を作成中＊＊＊＊＊＊＊＊＊＊" << std::endl;
 	ac.sendGoal(goal);
 	std::cout << "＊＊＊＊＊＊＊＊＊＊sendend＊＊＊＊＊＊＊＊＊＊" << std::endl;
-	ac.waitForResult();
+	while(ac.waitForResult(ros::Duration(1.0)) != true && ros::ok())
+	{
+		actionlib::SimpleClientGoalState goalstate = ac.getState();
+		std::cout << "state: " <<  goalstate.toString() << std::endl;
+	}
 	std::cout << "＊＊＊＊＊＊＊＊＊＊waitend＊＊＊＊＊＊＊＊＊＊" << std::endl;
 	if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;

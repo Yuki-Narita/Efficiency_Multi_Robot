@@ -328,8 +328,15 @@ void server_planning::OptimalTarget(void)
     cout << "robot2lengths size:" << robot2lengths.size() << endl;
     robot1lengths.shrink_to_fit();
     robot2lengths.shrink_to_fit();
+    for_sort.resize(robot1lengths.size()*robot2lengths.size());
     cout << "robot1lengths size:" << robot1lengths.size() << endl;
     cout << "robot2lengths size:" << robot2lengths.size() << endl;
+    cout << "std::get<1>(robot1lengths[0]):" << std::get<1>(robot1lengths[0])<< endl;
+    cout << "std::get<1>(robot2lengths[0]):" << std::get<1>(robot2lengths[0])<< endl;
+    cout << "std::get<0>(for_sort[0]):" << std::get<0>(for_sort[0]) << endl;
+    cout << "std::get<0>(for_sort[1]):" << std::get<1>(for_sort[0]) << endl;
+    cout << "std::get<0>(for_sort[2]):" << std::get<2>(for_sort[0]) << endl;
+    
     for(int i=0; i<robot1lengths.size(); i++)
     {
         for(int j=0; j<robot2lengths.size(); j++)
@@ -338,7 +345,9 @@ void server_planning::OptimalTarget(void)
             count++;
         }
     }
+    cout << "test" << endl;
     target_sort(for_sort);
+    cout << "test" << endl;
     final_target1.pose.position.x = std::get<2>(robot1lengths[std::get<0>(for_sort[0])]);
     final_target1.pose.position.y = std::get<3>(robot1lengths[std::get<0>(for_sort[0])]);
     final_target1.header.frame_id = robot1header;
@@ -608,14 +617,11 @@ void server_planning::SP_Memory_release(void)
         {
             delete[] r1_Voronoi_grid_array[p];
         }
-        cout << "test" << endl;
         delete[] r1_Voronoi_grid_array;
-        cout << "test" << endl;
         for(int p = 0; p < map_width; p++)
         {
             delete[] r1_enhanced_Voronoi_grid_array[p];
         }
-        cout << "test" << endl;
         delete[] r1_enhanced_Voronoi_grid_array;
         r1_voronoi_map_update = false;
     }
@@ -628,14 +634,11 @@ void server_planning::SP_Memory_release(void)
         {
             delete[] r2_Voronoi_grid_array[p];
         }
-        cout << "test" << endl;
         delete[] r2_Voronoi_grid_array;
-        cout << "test" << endl;
         for(int p = 0; p < map_width; p++)
         {
             delete[] r2_enhanced_Voronoi_grid_array[p];
         }
-        cout << "test" << endl;
         r2_voronoi_map_update = false;
     }
     for(int p = 0; p < map_width; p++)
@@ -657,7 +660,6 @@ void server_planning::FT2robots(void)
     std::string robot2header("/robot2/map");
     robot1TARGET.resize(Extracted_sum);
     robot2TARGET.resize(Extracted_sum);
-    cout << "test1" << endl;
     if(Extraction_Target_r1.size() != 0)
     {  
         for(int i = 0; i < robot1TARGET.size(); i++)
@@ -896,6 +898,8 @@ void server_planning::Clear_Vector(void)
     robot1TARGET.shrink_to_fit();
     robot2TARGET.clear();
     robot2TARGET.shrink_to_fit();
+    for_sort.clear();
+    for_sort.shrink_to_fit();
 }
 
 void server_planning::Clear_Num(void)
@@ -941,8 +945,8 @@ int server_planning::update_target(bool reset)
     final_target2_update.pose.position.y = std::get<3>(robot2lengths[std::get<1>(for_sort[update_target_count])]);
     final_target2_update.header.frame_id = robot2header;
     final_target2_update.pose.orientation.w = 0.1;
-    cout << "final_target1:" << final_target1_update << endl;
-    cout << "final_target2:" << final_target2_update << endl;
+    cout << "final_target1_update:" << final_target1_update << endl;
+    cout << "final_target2_update:" << final_target2_update << endl;
     robot1_final_target_pub.publish(final_target1_update);
     robot2_final_target_pub.publish(final_target2_update);
     update_target_count++;
