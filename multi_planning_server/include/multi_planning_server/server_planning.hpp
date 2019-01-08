@@ -57,8 +57,8 @@ class server_planning
     int robot2path_count=0;
     std::vector<int> frontier_x;
     std::vector<int> frontier_y;
-    std::vector<geometry_msgs::PoseStamped> final_target1_update;
-    std::vector<geometry_msgs::PoseStamped> final_target2_update;
+    geometry_msgs::PoseStamped final_target1_update;
+    geometry_msgs::PoseStamped final_target2_update;
     std::vector<geometry_msgs::PoseStamped> robot1TARGET;//抽出後のロボット１への目的地
     std::vector<geometry_msgs::PoseStamped> robot2TARGET;//抽出後のロボット２への目的地
     ros::Rate rate=10;
@@ -121,6 +121,7 @@ class server_planning
     void arrive1_flag(const std_msgs::Int8::ConstPtr &msg);
     void arrive2_flag(const std_msgs::Int8::ConstPtr &msg);
     int update_target(bool reset);
+    void target_sort(std::vector<std::tuple<int, int, float>>);
 
     ros::Subscriber path_sub1;
     ros::Subscriber path_sub2;
@@ -333,29 +334,26 @@ void server_planning::OptimalTarget(void)
     {
         for(int j=0; j<robot2lengths.size(); j++)
         {
-            for_sort[count] = std::make_tuple(i,j,std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]));
-                if(min_length > std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[i]))
-                {
-                    final_target1.pose.position.x = std::get<2>(robot1lengths[i]);
-                    final_target1.pose.position.y = std::get<3>(robot1lengths[i]);
-                    final_target1.header.frame_id = robot1header;
-                    final_target1.pose.orientation.w = 0.1;
-                    final_target1_update.push_back(final_target1);
-                    final_target2.pose.position.x = std::get<2>(robot2lengths[i]);
-                    final_target2.pose.position.y = std::get<3>(robot2lengths[i]);
-                    final_target2.header.frame_id = robot2header;
-                    final_target2.pose.orientation.w = 0.1;
-                    final_target2_update.push_back(final_target2);
-
-                }
+            for_sort[count] = std::make_tuple(i,j,std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[j]));
             count++;
         }
     }
+    target_sort(for_sort);
+    final_target1.pose.position.x = std::get<2>(robot1lengths[std::get<0>(for_sort[0])]);
+    final_target1.pose.position.y = std::get<3>(robot1lengths[std::get<0>(for_sort[0])]);
+    final_target1.header.frame_id = robot1header;
+    final_target1.pose.orientation.w = 0.1;
+    //final_target1_update.push_back(final_target1);
+    final_target2.pose.position.x = std::get<2>(robot2lengths[std::get<1>(for_sort[0])]);
+    final_target2.pose.position.y = std::get<3>(robot2lengths[std::get<1>(for_sort[0])]);
+    final_target2.header.frame_id = robot2header;
+    final_target2.pose.orientation.w = 0.1;
+    //final_target2_update.push_back(final_target2);
     cout << "min_length: " << min_length << endl;
     cout << "final_target1:" << final_target1 << endl;
     cout << "final_target2:" << final_target2 << endl;
-    robot1_final_target_pub.publish(final_target1_update[0]);
-    robot2_final_target_pub.publish(final_target2_update[0]);
+    robot1_final_target_pub.publish(final_target1);
+    robot2_final_target_pub.publish(final_target2);
     cout << "[OptimalTarget]----------------------------------------" << endl;
 }
 void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
@@ -898,10 +896,6 @@ void server_planning::Clear_Vector(void)
     robot1TARGET.shrink_to_fit();
     robot2TARGET.clear();
     robot2TARGET.shrink_to_fit();
-    final_target1_update.clear();
-	final_target1_update.shrink_to_fit();
-    final_target2_update.clear();
-	final_target2_update.shrink_to_fit();
 }
 
 void server_planning::Clear_Num(void)
@@ -923,30 +917,56 @@ void server_planning::arrive2_flag(const std_msgs::Int8::ConstPtr &msg)
     cout << "arrive2_flag: " << arrive2 << endl;
     cout << "arrive2_flag end" << endl;
 }
- int server_planning::update_target(bool reset)
- {
+int server_planning::update_target(bool reset)
+{
     static int update_target_count = 1;
+    std::string robot1header("/robot1/map");
+    std::string robot2header("/robot2/map");
     cout << "update_target_count: " << update_target_count << endl;
     if(reset == true)
     {
-        update_target_count = 1;
-        return 0;
+       update_target_count = 1;
+       return 0;
     }
-    cout << "final_target1_update size: " << final_target1_update.size() << endl;
-    cout << "final_target2_update size: " << final_target2_update.size() << endl;
-    if(final_target1_update.size() == 1 || final_target2_update.size() == 1 )
+    if(update_target_count == robot1lengths.size() || update_target_count == robot2lengths.size())
     {
-        cant_find_final_target_flag = true;
-        return 0;
+       cant_find_final_target_flag = true;
+       return 0;
     }
-    robot1_final_target_pub.publish(final_target1_update[update_target_count]);
-    final_target1_update.erase(final_target1_update.begin());
-    robot2_final_target_pub.publish(final_target2_update[update_target_count]);
-    final_target2_update.erase(final_target2_update.begin());
-    cout << "final_target1_update size: " << final_target1_update.size() << endl;
-    cout << "final_target2_update size: " << final_target2_update.size() << endl;
+    final_target1_update.pose.position.x = std::get<2>(robot1lengths[std::get<0>(for_sort[update_target_count])]);
+    final_target1_update.pose.position.y = std::get<3>(robot1lengths[std::get<0>(for_sort[update_target_count])]);
+    final_target1_update.header.frame_id = robot1header;
+    final_target1_update.pose.orientation.w = 0.1;
+    final_target2_update.pose.position.x = std::get<2>(robot2lengths[std::get<1>(for_sort[update_target_count])]);
+    final_target2_update.pose.position.y = std::get<3>(robot2lengths[std::get<1>(for_sort[update_target_count])]);
+    final_target2_update.header.frame_id = robot2header;
+    final_target2_update.pose.orientation.w = 0.1;
+    cout << "final_target1:" << final_target1_update << endl;
+    cout << "final_target2:" << final_target2_update << endl;
+    robot1_final_target_pub.publish(final_target1_update);
+    robot2_final_target_pub.publish(final_target2_update);
     update_target_count++;
     return 0;
- }
+}
+void server_planning::target_sort(std::vector<std::tuple<int, int, float>> for_sort)
+{
+    bool isEnd = false;
+    while(!isEnd)
+    {
+        bool loopSwap = false;
+        for(int i = 0; i < for_sort.size()-1; i++)
+        {
+            if(std::get<2>(for_sort[i]) > std::get<2>(for_sort[i+1]))
+            {
+                std::iter_swap(&for_sort[i],&for_sort[i+1]);
+                loopSwap = true;
+            }
+        }
+        if(!loopSwap)
+        {
+            isEnd = true;
+        }
+    }
+}
 
 #endif
