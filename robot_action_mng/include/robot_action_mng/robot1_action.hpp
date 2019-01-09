@@ -6,6 +6,8 @@
 #include<move_base_msgs/MoveBaseAction.h>
 #include<actionlib/client/simple_action_client.h>
 
+#include<visualization_msgs/Marker.h>
+
 class robot1_action
 {
     public:
@@ -23,10 +25,16 @@ class robot1_action
         ros::Rate rate = 10;
         std_msgs::Int8 arrive_flag1;
         bool wait_flag=false;
+
+        ros::NodeHandle robot1GoalNh;
+        ros::Publisher robot1GoalPub;
+
         robot1_action();
         ~robot1_action();
         void data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg);
         void moveToGoal(double goalX,double goalY,std::string mapFrame,std::string movebaseNode);
+        
+        void setGoalMarker(const double x,const double y,const std::string frameId);
 
 };
 
