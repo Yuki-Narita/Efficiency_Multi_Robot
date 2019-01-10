@@ -44,6 +44,7 @@ int main(int argc, char **argv)
     param_robot_str = oss.str();
     param_update.setParam("/multi_planning_server/robot_num",param_robot_num);
     //ロボットからサーバーへサービスを配布する。
+    /*
     std::cout << "param_robot_num: " << param_robot_num << std::endl;
     std::cout << "param_robot_str: " << param_robot_str<< std::endl;
     std::string srv_name;
@@ -57,6 +58,7 @@ int main(int argc, char **argv)
         std::cout << "test" << std::endl;
         r.sleep();
     }
+*/
 /*  
     turn_req_sub = turn_nh.subscribe("/firstturn", 1, &robot_moving::firstturnCB, &RM);
     while(ros::ok() && !RM.turn_fin)
