@@ -110,16 +110,16 @@ int main(int argc, char **argv)
             //Frontier_Searchからの座標を取得
             while(!SP.queueF_judge && ros::ok())
             {
-                SP.queueF.callOne(ros::WallDuration(1));
+                SP.queueF.callOne(ros::WallDuration(1));//FSノードから出てきた座標の情報を格納しているキューを購読しマップ配列の座標と対応する箇所を１，その他を０で埋める。
             }
             SP.queueF_judge = false;
             std::cout << "queueF.callOne was done." << std::endl;
-            SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));
-            SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));
+            SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));//ロボット１から出てきたボロノイ図を蓄えているキューを購読。ボロノイ図用の配列を確保し、そこに情報を反映する。r1_voronoi_map_updateフラグはここで立つ
+            SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));//ロボット２から出てきたボロノイ図を蓄えているキューを購読。ボロノイ図用の配列を確保し、そこに情報を反映する。r2_voronoi_map_updateフラグはここで立つ
             //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
             cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
             cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
-            if(SP.r1_voronoi_map_update || SP.r2_voronoi_map_update)
+            if(SP.r1_voronoi_map_update && SP.r2_voronoi_map_update)
             {
                 cout << "r1 and r2 voronoi_map_update" << endl;
                 SP.Extraction_Target();
@@ -130,16 +130,19 @@ int main(int argc, char **argv)
                 SP.OptimalTarget();
                 SP.arrive1 = 0;
                 SP.arrive2 = 0;
+                cout << "cant_find_final_target_flag" << SP.cant_find_final_target_flag << endl;
                 while(SP.cant_find_final_target_flag == 0 && ros::ok())
                 {
-                    cout << "test" << endl;
+                    cout << "arrive1" << SP.arrive1 << endl;
+                    cout << "arrive2" << SP.arrive2 << endl;
                     while(SP.arrive1 == 0 && SP.arrive2 == 0 && ros::ok())
                     {
                         SP.arrive1_queue.callOne();
                         SP.arrive2_queue.callOne();
                         sleep(0.1);
                     }
-                    cout << "test" << endl;
+                    cout << "arrive1" << SP.arrive1 << endl;
+                    cout << "arrive2" << SP.arrive2 << endl;
                     if(SP.arrive1 == 1 || SP.arrive2 == 1)
                     {
                         cout << "1 or 1" << endl;
@@ -157,13 +160,14 @@ int main(int argc, char **argv)
                     }
                     SP.arrive1 = 0;
                     SP.arrive2 = 0;
-                    cout << "test" << endl;
+                    cout << "cant_find_final_target_flag loop end" << endl;
                 }
-                cout << "test" << endl;
+                cout << "voronoi update flags initialize" << endl;
                 SP.r1_voronoi_map_update = false;
                 SP.r2_voronoi_map_update = false;
                 SP.cant_find_final_target_flag = false;
                 SP.update_target(true);
+                cout << "if end" << endl;
             }
             else
             {
@@ -210,7 +214,7 @@ int main(int argc, char **argv)
         cout << "test" << endl;
         SP.Clear_Num();
 
-        cout << "loop ended" << endl;
+        cout << "main loop ended" << endl;
         cout << "\n" << endl;
     }
     robot_num_nh.setParam("/multi_planning_server/robot_num",0);

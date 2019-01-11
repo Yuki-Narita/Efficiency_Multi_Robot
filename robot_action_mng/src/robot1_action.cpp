@@ -5,7 +5,9 @@ robot1_action::robot1_action()
 
 	robot1_pub_nh.setCallbackQueue(&robot1_pub_queue);
 	robot1_sub_nh.setCallbackQueue(&robot1_sub_queue);
+	robot1_odom_sub_nh.setCallbackQueue(&robot1_odom_queue);
     robot1_sub = robot1_sub_nh.subscribe("/robot1/final_target", 1, &robot1_action::data_setter, this);
+	robot1_odom_sub = robot1_odom_sub_nh.subscribe("/robot1/odom", 1, &robot1_action::escape_robot_stack, this);
 	robot1_pub = robot1_pub_nh.advertise<std_msgs::Int8>("/arrive_flag1", 1);
 	
 	robot1GoalPub = robot1GoalNh.advertise<visualization_msgs::Marker>("/robot1/action_goal",1);
@@ -19,6 +21,22 @@ void robot1_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	wait_flag = true;
 }
 
+void robot1_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
+{
+	static nav_msgs::Odometry previous, current;
+	previous = current;
+	current = *odom;
+
+	int diff_x, diff_y;
+	diff_x = current.pose.pose.position.x - previous.pose.pose.position.x;
+	diff_y = current.pose.pose.position.y - previous.pose.pose.position.y;
+
+	if(diff_x == 0 && diff_y == 0)
+	{
+		goalstate = actionlib::SimpleClientGoalState::ABORTED;
+		check_robot_stack = true;
+	}	
+}
 
 void robot1_action::setGoalMarker(const double x,const double y, const std::string frameId)
 {
@@ -92,18 +110,20 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	std::cout << "＊＊＊＊＊＊＊＊＊＊経路を作成中＊＊＊＊＊＊＊＊＊＊" << std::endl;
 	ac.sendGoal(goal);
 	std::cout << "＊＊＊＊＊＊＊＊＊＊sendend＊＊＊＊＊＊＊＊＊＊" << std::endl;
-	while(ac.waitForResult(ros::Duration(1.0)) != true && ros::ok())
+	while(ac.waitForResult(ros::Duration(1.0)) != true && check_robot_stack != true && ros::ok())
 	{
-		actionlib::SimpleClientGoalState goalstate = ac.getState();
-		std::cout << "state: " <<  goalstate.toString() << std::endl;
+		actionlib::SimpleClientGoalState check_state = ac.getState();
+		std::cout << "state: " <<  check_state.toString() << std::endl;
+		robot1_odom_queue.callOne();
 	}
+	check_robot_stack = false;
 	std::cout << "＊＊＊＊＊＊＊＊＊＊waitend＊＊＊＊＊＊＊＊＊＊" << std::endl;
 	if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag1.data = 1;
 		robot1_pub.publish(arrive_flag1);
 	}
-	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED){
+	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED || goalstate == 4){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標へのパス生成不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag1.data = 2;
 		robot1_pub.publish(arrive_flag1);
