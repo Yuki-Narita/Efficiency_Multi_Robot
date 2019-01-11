@@ -23,6 +23,7 @@ void robot1_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
 void robot1_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 {
+	std::cout << "escape_robot_stack start" << std::endl;
 	static nav_msgs::Odometry previous, current;
 	previous = current;
 	current = *odom;
@@ -33,9 +34,17 @@ void robot1_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 
 	if(diff_x == 0 && diff_y == 0)
 	{
-		goalstate = actionlib::SimpleClientGoalState::ABORTED;
-		check_robot_stack = true;
+		std::cout << "if" << std::endl;
+		static int count = 0;
+		count++;
+		if(count == 10)
+		{
+			goalstate = actionlib::SimpleClientGoalState::ABORTED;
+			check_robot_stack = true;
+			std::cout << "escape stack" << std::endl;
+		}
 	}	
+	std::cout << "escape_robot_stack end" << std::endl;
 }
 
 void robot1_action::setGoalMarker(const double x,const double y, const std::string frameId)

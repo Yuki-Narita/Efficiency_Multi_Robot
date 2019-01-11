@@ -25,8 +25,13 @@ void robot2_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 
 	if(diff_x == 0 && diff_y == 0)
 	{
-		goalstate = actionlib::SimpleClientGoalState::ABORTED;
-		check_robot_stack = true;
+		static int count = 0;
+		count++;
+		if(count == 10)
+		{
+			goalstate = actionlib::SimpleClientGoalState::ABORTED;
+			check_robot_stack = true;
+		}
 	}	
 } 
 
