@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     SP.odom_queue_flag=false;
     cout << "test" << endl;
     sleep(1);
-    int count2=0;
+    int count2 = 0;
     while((!SP.odom_queue_flag || !SP.r2_voronoi_map_update) && ros::ok())
     {
         SP.robot2_odom_queue.callOne(ros::WallDuration(1));
@@ -132,15 +132,14 @@ int main(int argc, char **argv)
                 SP.arrive2 = 0;
                 while(SP.cant_find_final_target_flag == 0 && ros::ok())
                 {
+                    cout << "test" << endl;
                     while(SP.arrive1 == 0 && SP.arrive2 == 0 && ros::ok())
                     {
                         SP.arrive1_queue.callOne();
                         SP.arrive2_queue.callOne();
-                        cout << "SP.arrive1:" << SP.arrive1 << endl;
-                        cout << "SP.arrive2:" << SP.arrive2 << endl;
-                        cout << "test" << endl;
                         sleep(0.1);
                     }
+                    cout << "test" << endl;
                     if(SP.arrive1 == 1 || SP.arrive2 == 1)
                     {
                         cout << "1 or 1" << endl;
@@ -158,7 +157,9 @@ int main(int argc, char **argv)
                     }
                     SP.arrive1 = 0;
                     SP.arrive2 = 0;
+                    cout << "test" << endl;
                 }
+                cout << "test" << endl;
                 SP.r1_voronoi_map_update = false;
                 SP.r2_voronoi_map_update = false;
                 SP.cant_find_final_target_flag = false;
@@ -202,9 +203,11 @@ int main(int argc, char **argv)
             return 0;
         }
         cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
-                cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
+        cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
         SP.SP_Memory_release();
+        cout << "test" << endl;
         SP.Clear_Vector();
+        cout << "test" << endl;
         SP.Clear_Num();
 
         cout << "loop ended" << endl;
