@@ -50,8 +50,8 @@ class server_planning
     nav_msgs::Odometry robot2_odom;
     geometry_msgs::PoseStamped stop_pose;
     std::vector<geometry_msgs::PoseStamped> TARGET;//FSノードから取得したフロンティア領域
-    std::vector<std::tuple<int, float, float, float>> robot1lengths;//ロボット１の自己位置から目的地までの長さのコンテナ
-    std::vector<std::tuple<int, float, float, float>> robot2lengths;//ロボット２の自己位置から目的地までの長さのコンテナ
+    std::vector<std::tuple<int, float, float, float>> robot1lengths;//ロボット１の自己位置から目的地までの長さのコンテナ,seq,psth length,x ,y
+    std::vector<std::tuple<int, float, float, float>> robot2lengths;//ロボット２の自己位置から目的地までの長さのコンテナ,seq,psth length,x ,y
     std::vector<std::tuple<int, int, float>> for_sort;//組み合わせたロボット同士の長さが小さい順にソートする用＜robot1_seq, robot2_seq, length＞
     int robot1path_count=0;
     int robot2path_count=0;
@@ -61,7 +61,7 @@ class server_planning
     geometry_msgs::PoseStamped final_target2_update;
     std::vector<geometry_msgs::PoseStamped> robot1TARGET;//抽出後のロボット１への目的地
     std::vector<geometry_msgs::PoseStamped> robot2TARGET;//抽出後のロボット２への目的地
-    ros::Rate rate=30;
+    ros::Rate rate=5;
 
     //初期にロボットのvorrnoi_gridを生成するために目的地として与える点。
     float robot_front_point;
@@ -229,8 +229,8 @@ avoid_target(3)
     map_sub=mn.subscribe("/server/grid_map_merge/merge_map", 1, &server_planning::map_input, this);
     robot1_odom_sub=robot1_odom_nh.subscribe("/robot1/odom", 1, &server_planning::robot1_odom_CB, this);
     robot2_odom_sub=robot2_odom_nh.subscribe("/robot2/odom", 1, &server_planning::robot2_odom_CB, this);
-    r1_voronoi_grid_sub=r1_voronoi_map_nh.subscribe("/robot1/move_base/VoronoiPlanner/voronoi_grid", 1, &server_planning::r1_voronoi_map_CB, this);
-    r2_voronoi_grid_sub=r2_voronoi_map_nh.subscribe("/robot2/move_base/VoronoiPlanner/voronoi_grid", 1, &server_planning::r2_voronoi_map_CB, this);
+    r1_voronoi_grid_sub=r1_voronoi_map_nh.subscribe("/robot1_voronoi_grid_update", 1, &server_planning::r1_voronoi_map_CB, this);
+    r2_voronoi_grid_sub=r2_voronoi_map_nh.subscribe("/robot2_voronoi_grid_update", 1, &server_planning::r2_voronoi_map_CB, this);
     arrive1_sub = arrive1_nh.subscribe("/arrive_flag1", 1, &server_planning::arrive1_flag, this);
     arrive2_sub = arrive2_nh.subscribe("/arrive_flag2", 1, &server_planning::arrive2_flag, this);
     get_param_nh.getParam("/robot1_init_x",robot1_init_x);
@@ -343,12 +343,10 @@ void server_planning::OptimalTarget(void)
         for(int j=0; j<robot2lengths.size(); j++)
         {
             for_sort[count] = std::make_tuple(i,j,std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[j]));
-            count++;
+            count++;//for_sortの要素番号
         }
     }
-    cout << "test" << endl;
     target_sort(for_sort);
-    cout << "test" << endl;
     final_target1.pose.position.x = std::get<2>(robot1lengths[std::get<0>(for_sort[0])]);
     final_target1.pose.position.y = std::get<3>(robot1lengths[std::get<0>(for_sort[0])]);
     final_target1.header.frame_id = robot1header;
@@ -361,7 +359,10 @@ void server_planning::OptimalTarget(void)
     //final_target2_update.push_back(final_target2);
     check_avoid_target = sqrt(pow(final_target1.pose.position.x - (final_target2.pose.position.x + 3.0), 2) + pow(final_target1.pose.position.y - (final_target2.pose.position.y), 2));
     cout << "min_length: " << min_length << endl;
-    if(check_avoid_target >= avoid_target)
+    if((check_avoid_target >= avoid_target)
+        && (final_target1_update.pose.position.x != 0.0 && final_target1_update.pose.position.y != 0.0)
+        && (final_target2_update.pose.position.x != 0.0 && final_target2_update.pose.position.y != 0.0) 
+        )
     {
         cout << "final_target1:" << final_target1 << endl;
         cout << "final_target2:" << final_target2 << endl;
@@ -572,52 +573,68 @@ void server_planning::Extraction_Target(void)
 void server_planning::r1_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr& voronoi_map_msg)
 {
     cout << "[r1_voronoi_map_CB]----------------------------------------" << endl;
-    r1_map_height = voronoi_map_msg ->info.height;
-    r1_map_width = voronoi_map_msg ->info.width;
     cout << "voronoi_map width: " << voronoi_map_msg->info.width << endl;
     cout << "voronoi_map height: " << voronoi_map_msg->info.height << endl;
-    cout << "voronoi_map resolution: " << voronoi_map_msg->info.resolution << endl;
-    //ボロノイグリッド格納用の配列を確保
-    r1_Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
-    for(int p = 0; p < voronoi_map_msg->info.width; p++)
-        {
-            r1_Voronoi_grid_array[p] = new int [voronoi_map_msg->info.height];
-        }
-    //ボロノイグリッドを配列に格納
-    for(int j = 0; j < voronoi_map_msg->info.height; j++)
+    r1_map_height = voronoi_map_msg ->info.height;
+    r1_map_width = voronoi_map_msg ->info.width;
+    if(r1_map_height != 0)
     {
-        for(int i = 0; i < voronoi_map_msg->info.width; i++)
+        cout << "voronoi_map width: " << voronoi_map_msg->info.width << endl;
+        cout << "voronoi_map height: " << voronoi_map_msg->info.height << endl;
+        cout << "voronoi_map resolution: " << voronoi_map_msg->info.resolution << endl;
+        //ボロノイグリッド格納用の配列を確保
+        r1_Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
+        for(int p = 0; p < voronoi_map_msg->info.width; p++)
+            {
+                r1_Voronoi_grid_array[p] = new int [voronoi_map_msg->info.height];
+            }
+        //ボロノイグリッドを配列に格納
+        for(int j = 0; j < voronoi_map_msg->info.height; j++)
         {
-            r1_Voronoi_grid_array[i][j]=voronoi_map_msg->data[voronoi_map_msg->info.width*j+i];
+            for(int i = 0; i < voronoi_map_msg->info.width; i++)
+            {
+                r1_Voronoi_grid_array[i][j]=voronoi_map_msg->data[voronoi_map_msg->info.width*j+i];
+            }
         }
+        r1_voronoi_map_update = true;
     }
-    r1_voronoi_map_update = true;
+    else
+    {
+        r1_voronoi_map_update = false;
+    }
     cout << "[r1_voronoi_map_CB]----------------------------------------\n" << endl;
 }
 
 void server_planning::r2_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr& voronoi_map_msg)
 {
     cout << "[r2_voronoi_map_CB]----------------------------------------" << endl;
-    r2_map_height = voronoi_map_msg ->info.height;
-    r2_map_width = voronoi_map_msg ->info.width;
-    cout << "voronoi_map width: " << voronoi_map_msg->info.width << endl;
-    cout << "voronoi_map height: " << voronoi_map_msg->info.height << endl;
-    cout << "voronoi_map resolution: " << voronoi_map_msg->info.resolution << endl;
-    //ボロノイグリッド格納用の配列を確保
-    r2_Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
-    for(int p = 0; p < voronoi_map_msg->info.width; p++)
+    if(voronoi_map_msg -> info.height != 0)
     {
-        r2_Voronoi_grid_array[p] = new int [voronoi_map_msg->info.height];
-    }
-    //ボロノイグリッドを配列に格納
-    for(int j = 0; j < voronoi_map_msg->info.height; j++)
-    {
-        for(int i = 0; i < voronoi_map_msg->info.width; i++)
+        r2_map_height = voronoi_map_msg ->info.height;
+        r2_map_width = voronoi_map_msg ->info.width;
+        cout << "voronoi_map width: " << voronoi_map_msg->info.width << endl;
+        cout << "voronoi_map height: " << voronoi_map_msg->info.height << endl;
+        cout << "voronoi_map resolution: " << voronoi_map_msg->info.resolution << endl;
+        //ボロノイグリッド格納用の配列を確保
+        r2_Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
+        for(int p = 0; p < voronoi_map_msg->info.width; p++)
         {
-            r2_Voronoi_grid_array[i][j]=voronoi_map_msg->data[voronoi_map_msg->info.width*j+i];
+            r2_Voronoi_grid_array[p] = new int [voronoi_map_msg->info.height];
         }
+        //ボロノイグリッドを配列に格納
+        for(int j = 0; j < voronoi_map_msg->info.height; j++)
+        {
+            for(int i = 0; i < voronoi_map_msg->info.width; i++)
+            {
+                r2_Voronoi_grid_array[i][j]=voronoi_map_msg->data[voronoi_map_msg->info.width*j+i];
+            }
+        }
+        r2_voronoi_map_update = true;
     }
-    r2_voronoi_map_update = true;
+    else
+    {
+        r2_voronoi_map_update = false;
+    }
     cout << "[r2_voronoi_map_CB]----------------------------------------\n" << endl;
 }
 
@@ -682,10 +699,11 @@ void server_planning::FT2robots(void)
 {
     cout << "[FT2robots start]----------------------------------------" << endl;
     int test_count = 0;
-    robot1lengths.resize(Extracted_sum);
-    robot2lengths.resize(Extracted_sum);
+    robot1lengths.resize(Extraction_Target_r1.size());
+    robot2lengths.resize(Extraction_Target_r2.size());
     cout << "FT2robots Extracted_sum size: " << Extracted_sum << endl;
-
+    cout << "queue1 empty: " << queue1.empty() << endl;
+    cout << "queue2 empty: " << queue2.empty() << endl;
     std::string robot1header("/robot1/map");
     std::string robot2header("/robot2/map");
     robot1TARGET.resize(Extracted_sum);
@@ -703,7 +721,7 @@ void server_planning::FT2robots(void)
             robot1TARGET[i].pose.position.x = Extraction_Target_r1[i].pose.position.x;
             robot1TARGET[i].pose.position.y = Extraction_Target_r1[i].pose.position.y;
             target2robot1.publish(robot1TARGET[i]);
-            if(i == robot1TARGET.size()-1) break;
+            if(i == robot1TARGET.size()-1) break;//sleepしないようにするためだけの処理
             test_count++;
             rate.sleep();
         }
@@ -935,8 +953,9 @@ void server_planning::Clear_Vector(void)
 	Extraction_Target_r2.shrink_to_fit();
     cout << "Extraction_Target_r2" << endl;
     robot1lengths.clear();
+    cout << "robot1lengths clear" << endl;
 	robot1lengths.shrink_to_fit();
-    cout << "robot1lengths" << endl;
+    cout << "robot1lengths shrink" << endl;
     robot2lengths.clear();
 	robot2lengths.shrink_to_fit();
     cout << "robot2lengths" << endl;
@@ -955,6 +974,8 @@ void server_planning::Clear_Num(void)
 {
     robot1path_count = 0;
     robot2path_count = 0;
+    queue1.clear();
+    queue2.clear();
     cout << "Clear_Num" << endl;
 }
 void server_planning::arrive1_flag(const std_msgs::Int8::ConstPtr &msg)
@@ -1000,7 +1021,10 @@ int server_planning::update_target(bool reset)
     final_target2_update.pose.orientation.w = 1.0;
     update_target_count++;
     check_avoid_target = sqrt(pow(final_target1_update.pose.position.x - (final_target2_update.pose.position.x + 3.0), 2) + pow(final_target1_update.pose.position.y - (final_target2_update.pose.position.y), 2));
-    if(check_avoid_target >= avoid_target)
+    if((check_avoid_target >= avoid_target) 
+        && (final_target1_update.pose.position.x != 0.0 && final_target1_update.pose.position.y != 0.0)
+        && (final_target2_update.pose.position.x != 0.0 && final_target2_update.pose.position.y != 0.0) 
+        )
     {
         cout << "final_target1_update:" << final_target1_update << endl;
         cout << "final_target2_update:" << final_target2_update << endl;

@@ -87,7 +87,7 @@ class Frontier_Search
 		continuity(0),
     	start_k(0),
     	end_k(0),
-    	search_width(3)
+    	search_width(4)
 		{
 			ff.setCallbackQueue(&queueF);
     		subff = ff.subscribe("/server/grid_map_merge/merge_map", 1, &Frontier_Search::FSinput, this); //購読先がグローバルマップ
@@ -242,33 +242,40 @@ void Frontier_Search::Search_Obstacle(void)
 	std::cout << "pre_fronum:" << pre_fronum << std::endl;
     for(k=0;k<pre_fronum;k++){
 		//std::cout << "pre_frox[k]:" << pre_frox[k] << std::endl;
-		if(pre_frox[k]-half_sq < 0){
+		if(pre_frox[k]-half_sq < 0)
+		{
 			//std::cout << "half_leftx:" << half_leftx << std::endl;
 			half_leftx = pre_frox[k];
 			//std::cout << "half_leftx:" << half_leftx << std::endl;
 		}
-		else{
+		else
+		{
 			half_leftx = half_sq;
 		}
 
 
-		if(pre_frox[k]+half_sq > (x-1)){
+		if(pre_frox[k]+half_sq > (x-1))
+		{
 			half_rightx = (x-1)-pre_frox[k];
 		}
-		else{
+		else
+		{
 			half_rightx = half_sq;
 		}
 
 
-		if(pre_froy[k]-half_sq < 0){
+		if(pre_froy[k]-half_sq < 0)
+		{
 			half_topy = pre_froy[k];
 		}
-		else{
+		else
+		{
 			half_topy = half_sq;
 		}
 
 
-		if(pre_froy[k]+half_sq > (y-1)){
+		if(pre_froy[k]+half_sq > (y-1))
+		{
 			half_bottomy = (y-1)-pre_froy[k];
 		}
 		else

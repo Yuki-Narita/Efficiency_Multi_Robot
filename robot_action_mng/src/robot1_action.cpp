@@ -28,17 +28,20 @@ void robot1_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 	previous = current;
 	current = *odom;
 
-	int diff_x, diff_y;
+	float diff_x, diff_y;
+	int check_diff_x, check_diff_y; 
 	diff_x = current.pose.pose.position.x - previous.pose.pose.position.x;
 	diff_y = current.pose.pose.position.y - previous.pose.pose.position.y;
-
-	if(diff_x == 0 && diff_y == 0)
+	check_diff_x = 1000*diff_x;
+	check_diff_y = 1000*diff_y;
+	if(check_diff_x == 0 && check_diff_y == 0)
 	{
 		std::cout << "if" << std::endl;
 		static int count = 0;
 		count++;
 		if(count == 10)
 		{
+			std::cout << "count:" << count << std::endl;
 			goalstate = actionlib::SimpleClientGoalState::ABORTED;
 			check_robot_stack = true;
 			std::cout << "escape stack" << std::endl;
@@ -126,13 +129,14 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 		robot1_odom_queue.callOne();
 	}
 	check_robot_stack = false;
+	std::cout << "goalstate(if this is  5, its ok):" << goalstate << std::endl;
 	std::cout << "＊＊＊＊＊＊＊＊＊＊waitend＊＊＊＊＊＊＊＊＊＊" << std::endl;
 	if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag1.data = 1;
 		robot1_pub.publish(arrive_flag1);
 	}
-	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED || goalstate == 4){
+	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED || goalstate == 5){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標へのパス生成不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag1.data = 2;
 		robot1_pub.publish(arrive_flag1);

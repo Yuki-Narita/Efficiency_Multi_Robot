@@ -35,6 +35,7 @@ int main(int argc, char **argv)
     
     
     int count=0;
+    int main_count = 0;
     bool flag =false;
     std::string tmp_name;
     std::string srv_name;
@@ -83,6 +84,8 @@ int main(int argc, char **argv)
     }
     */
    cout << "---------------------【SERVER_PLANINNG START】-------------------" << endl;
+   while(ros::ok())
+   {
     while((!SP.odom_queue_flag || !SP.r1_voronoi_map_update) && ros::ok())
     {
         SP.robot1_odom_queue.callOne(ros::WallDuration(1));
@@ -102,7 +105,7 @@ int main(int argc, char **argv)
         cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
     }
     //メインループ
-    while(ros::ok())
+    while(ros::ok() && main_count <=10)
     {
         SP.queueM.callOne(ros::WallDuration(1));
         if(SP.map_isinput())
@@ -114,8 +117,6 @@ int main(int argc, char **argv)
             }
             SP.queueF_judge = false;
             std::cout << "queueF.callOne was done." << std::endl;
-            SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));//ロボット１から出てきたボロノイ図を蓄えているキューを購読。ボロノイ図用の配列を確保し、そこに情報を反映する。r1_voronoi_map_updateフラグはここで立つ
-            SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));//ロボット２から出てきたボロノイ図を蓄えているキューを購読。ボロノイ図用の配列を確保し、そこに情報を反映する。r2_voronoi_map_updateフラグはここで立つ
             //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
             cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
             cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
@@ -133,8 +134,8 @@ int main(int argc, char **argv)
                 cout << "cant_find_final_target_flag" << SP.cant_find_final_target_flag << endl;
                 while(SP.cant_find_final_target_flag == 0 && ros::ok())
                 {
-                    cout << "arrive1" << SP.arrive1 << endl;
-                    cout << "arrive2" << SP.arrive2 << endl;
+                    cout << "arrive1: " << SP.arrive1 << endl;
+                    cout << "arrive2: " << SP.arrive2 << endl;
                     while(SP.arrive1 == 0 && SP.arrive2 == 0 && ros::ok())
                     {
                         SP.arrive1_queue.callOne();
@@ -171,6 +172,7 @@ int main(int argc, char **argv)
             }
             else
             {
+                main_count++;
                 continue;
             }
             //それぞれのロボットの自己位置とゴールを結ぶパスを取得する。
@@ -217,6 +219,8 @@ int main(int argc, char **argv)
         cout << "main loop ended" << endl;
         cout << "\n" << endl;
     }
+    
+   }
     robot_num_nh.setParam("/multi_planning_server/robot_num",0);
     robot_num_nh.setParam("/multi_planning_server/given_robot_num",0);
     cout << "---------------------【SERVER_PLANINNG END】-------------------" << endl;
