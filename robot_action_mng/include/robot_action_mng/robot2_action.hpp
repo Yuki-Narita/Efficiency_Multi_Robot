@@ -6,6 +6,7 @@
 #include<move_base_msgs/MoveBaseAction.h>
 #include<actionlib/client/simple_action_client.h>
 #include<nav_msgs/Odometry.h>
+#include<geometry_msgs/PoseStamped.h>
 
 #include<visualization_msgs/Marker.h>
 
@@ -23,8 +24,10 @@ class robot2_action
         ros::Subscriber robot2_sub;
         ros::Subscriber robot2_odom_sub;
         ros::Publisher robot2_pub;
+        ros::Publisher robot2_test_pub;
         ros::NodeHandle param2;
         ros::NodeHandle robot2_pub_nh;
+        ros::NodeHandle robot2_test_pub_nh;
         ros::NodeHandle robot2_sub_nh;
         ros::NodeHandle robot2_odom_sub_nh;
         ros::Rate rate = 10;

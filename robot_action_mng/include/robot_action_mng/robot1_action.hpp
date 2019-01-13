@@ -6,6 +6,7 @@
 #include<move_base_msgs/MoveBaseAction.h>
 #include<actionlib/client/simple_action_client.h>
 #include<nav_msgs/Odometry.h>
+#include<geometry_msgs/PoseStamped.h>
 
 #include<visualization_msgs/Marker.h>
 
@@ -22,10 +23,12 @@ class robot1_action
         ros::Subscriber robot1_sub;
         ros::Subscriber robot1_odom_sub;
         ros::Publisher robot1_pub;
+        ros::Publisher robot1_test_pub;
         ros::NodeHandle param1;
         ros::NodeHandle robot1_pub_nh;
         ros::NodeHandle robot1_sub_nh;
         ros::NodeHandle robot1_odom_sub_nh;
+        ros::NodeHandle robot1_test_pub_nh;
         ros::Rate rate = 10;
         std_msgs::Int8 arrive_flag1;
         actionlib::SimpleClientGoalState::StateEnum goalstate;

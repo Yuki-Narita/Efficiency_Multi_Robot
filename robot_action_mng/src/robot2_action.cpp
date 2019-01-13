@@ -8,6 +8,7 @@ robot2_action::robot2_action()
 	robot2_sub = robot2_sub_nh.subscribe("/robot2/final_target", 1, &robot2_action::data_setter, this);
 	robot2_odom_sub = robot2_odom_sub_nh.subscribe("/robot2/odom",1,&robot2_action::escape_robot_stack,this);
 	robot2_pub = robot2_pub_nh.advertise<std_msgs::Int8>("/arrive_flag2", 1);
+	robot2_test_pub = robot2_test_pub_nh.advertise<geometry_msgs::PoseStamped>("/robot2/move_base_simple/goal",1);
 	
 	robot2GoalPub = robot2GoalNh.advertise<visualization_msgs::Marker>("/robot2/action_goal",1);
 }
@@ -19,11 +20,14 @@ void robot2_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 	previous = current;
 	current = *odom;
 
-	int diff_x, diff_y;
+	float diff_x, diff_y;
+	int check_diff_x, check_diff_y;
+
 	diff_x = current.pose.pose.position.x - previous.pose.pose.position.x;
 	diff_y = current.pose.pose.position.y - previous.pose.pose.position.y;
-
-	if(diff_x == 0 && diff_y == 0)
+	check_diff_x = diff_x * 1000;
+	check_diff_y = diff_y * 1000;
+	if(check_diff_x == 0 && check_diff_y == 0)
 	{
 		static int count = 0;
 		count++;
@@ -109,7 +113,15 @@ void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標セット(" << goalX << "," << goalY << ")＊＊＊＊＊＊＊＊＊＊" << std::endl;
 
 	setGoalMarker(goalX,goalY,mapFrame);
-
+	geometry_msgs::PoseStamped goalpose;
+	goalpose.pose.position.x = goalX;
+	goalpose.pose.position.y = goalY;
+	goalpose.pose.position.z = 0.0;
+	goalpose.pose.orientation.x=0.0;
+	goalpose.pose.orientation.y=0.0;
+	goalpose.pose.orientation.z=0.0;
+	goalpose.pose.orientation.w=1.0;
+	goalpose.header.frame_id = mapFrame;
 
 	std::cout << "＊＊＊＊＊＊＊＊＊＊経路を作成中＊＊＊＊＊＊＊＊＊＊" << std::endl;
 	ac.sendGoal(goal);
@@ -126,16 +138,19 @@ void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標に到着＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag2.data = 1;
 		robot2_pub.publish(arrive_flag2);
+		robot2_test_pub.publish(goalpose);
 	}
 	else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED || goalstate == 4){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標へのパス生成不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag2.data = 2;
 		robot2_pub.publish(arrive_flag2);
+		robot2_test_pub.publish(goalpose);
 	}
 	else{
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag2.data = 3;
 		robot2_pub.publish(arrive_flag2);
+		robot2_test_pub.publish(goalpose);
 		//return res.result;
 	}
 }
