@@ -207,3 +207,5 @@ include_directories(
 
 add_executable(robot_moving src/robot_moving.cpp)
 target_link_libraries(robot_moving ${catkin_LIBRARIES})
+add_executable(first_turn_cmd src/first_turn_cmd.cpp)
+target_link_libraries(first_turn_cmd ${catkin_LIBRARIES})
