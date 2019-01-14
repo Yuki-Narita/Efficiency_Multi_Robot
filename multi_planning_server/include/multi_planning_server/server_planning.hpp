@@ -955,6 +955,8 @@ void server_planning::Clear_Num(void)
 {
     robot1path_count = 0;
     robot2path_count = 0;
+    queue1.clear();
+    queue2.clear();
     cout << "Clear_Num" << endl;
 }
 void server_planning::arrive1_flag(const std_msgs::Int8::ConstPtr &msg)
