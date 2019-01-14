@@ -14,6 +14,12 @@ int main(int argc, char **argv)
     //パラメータサーバー用
     ros::NodeHandle robot_num_nh;
     ros::ServiceClient firstturnClient;
+    
+    //timing用
+    ros::NodeHandle timing_nh;
+    ros::Publisher timing_pub;
+    timing_pub = timing_nh.advertise<std_msgs::Int8>("/timing_check",1);
+
     server_planning SP;
 
     
@@ -25,7 +31,8 @@ int main(int argc, char **argv)
     ros::NodeHandle srv_nh;
     std_srvs::Empty srv;
     std::cout << "test1" << std::endl;
-    
+    SP.timing_int.data = 1;
+    timing_pub.publish(SP.timing_int);
     while(ros::ok() && !(robot_num == given_robot_num))
     {
         robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
@@ -217,6 +224,8 @@ int main(int argc, char **argv)
         cout << "main loop ended" << endl;
         cout << "\n" << endl;
     }
+    SP.timing_int.data = 2;
+    timing_pub.publish(SP.timing_int);
     robot_num_nh.setParam("/multi_planning_server/robot_num",0);
     robot_num_nh.setParam("/multi_planning_server/given_robot_num",0);
     cout << "---------------------【SERVER_PLANINNG END】-------------------" << endl;
