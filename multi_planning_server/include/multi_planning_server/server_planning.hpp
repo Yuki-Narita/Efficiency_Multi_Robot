@@ -62,6 +62,7 @@ class server_planning
     std::vector<geometry_msgs::PoseStamped> robot1TARGET;//抽出後のロボット１への目的地
     std::vector<geometry_msgs::PoseStamped> robot2TARGET;//抽出後のロボット２への目的地
     ros::Rate rate=30;
+    
 
     //初期にロボットのvorrnoi_gridを生成するために目的地として与える点。
     float robot_front_point;
@@ -180,6 +181,8 @@ class server_planning
     ros::CallbackQueue robot2_odom_queue;
     std_msgs::String sub_msg;//これ多分使ってないからいらないと思う。
     
+
+
     //その他
     bool isinput;
     bool turn_fin;
@@ -190,6 +193,7 @@ class server_planning
     bool cant_find_final_target_flag=false;
     int arrive1;
     int arrive2;
+    std_msgs::Int8 timing_int;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target_r1;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target_r2;
     std::string tmp_name;
