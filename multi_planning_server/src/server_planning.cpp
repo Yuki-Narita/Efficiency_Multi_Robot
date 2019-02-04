@@ -168,7 +168,13 @@ int main(int argc, char **argv)
                     else if(SP.arrive1 == 5 || SP.arrive2 == 5)
                     {
                         cout << "5 or 5" << endl;
-                        SP.update_target(false);
+                        while((SP.arrive1 != 1 || SP.arrive2 != 1) && ros::ok())
+                        {
+                            SP.arrive1_queue.callOne();
+                            SP.arrive2_queue.callOne();
+                            sleep(0.1);
+                        }
+                        break;
                     }
                     else
                     {
@@ -176,7 +182,6 @@ int main(int argc, char **argv)
                         cout << "SP.arrive1:" << SP.arrive1 << endl;
                         cout << "SP.arrive2:" << SP.arrive2 << endl;
                     }
-                    
                     SP.arrive1 = 0;
                     SP.arrive2 = 0;
                     cout << "cant_find_final_target_flag loop end" << endl;

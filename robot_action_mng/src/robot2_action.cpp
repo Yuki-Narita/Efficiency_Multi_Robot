@@ -163,6 +163,16 @@ void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 		arrive_flag2.data = 5;
 		robot2_pub.publish(arrive_flag2);
 		robot2_test_pub.publish(goalpose);
+		while(ac.waitForResult(ros::Duration(1.0)) != true && ros::ok())
+		{
+			actionlib::SimpleClientGoalState check_recalled = ac.getState();
+			std::cout << "state: " <<  check_recalled.toString() << std::endl;
+			robot2_odom_queue.callOne();
+		}
+		arrive_flag2.data = 1;
+		robot2_pub.publish(arrive_flag2);
+		robot2_test_pub.publish(goalpose);
+		sleep(0.1);
 	}
 	else if(ac.getState() == actionlib::SimpleClientGoalState::REJECTED){
 		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動拒否＊＊＊＊＊＊＊＊＊＊" << std::endl;
