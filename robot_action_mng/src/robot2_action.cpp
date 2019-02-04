@@ -146,12 +146,41 @@ void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 		robot2_pub.publish(arrive_flag2);
 		robot2_test_pub.publish(goalpose);
 	}
-	else{
-		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動不可＊＊＊＊＊＊＊＊＊＊" << std::endl;
+	else if(ac.getState() == actionlib::SimpleClientGoalState::ACTIVE){
+		std::cout << "＊＊＊＊＊＊＊＊＊＊動作中＊＊＊＊＊＊＊＊＊＊" << std::endl;
 		arrive_flag2.data = 3;
 		robot2_pub.publish(arrive_flag2);
 		robot2_test_pub.publish(goalpose);
-		//return res.result;
+	}
+	else if(ac.getState() == actionlib::SimpleClientGoalState::PENDING){
+		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動保留中＊＊＊＊＊＊＊＊＊＊" << std::endl;
+		arrive_flag2.data = 4;
+		robot2_pub.publish(arrive_flag2);
+		robot2_test_pub.publish(goalpose);
+	}
+	else if(ac.getState() == actionlib::SimpleClientGoalState::RECALLED){
+		std::cout << "＊＊＊＊＊＊＊＊＊＊以前の目標に移動する前に新たな目標が設定されました＊＊＊＊＊＊＊＊＊＊" << std::endl;
+		arrive_flag2.data = 5;
+		robot2_pub.publish(arrive_flag2);
+		robot2_test_pub.publish(goalpose);
+	}
+	else if(ac.getState() == actionlib::SimpleClientGoalState::REJECTED){
+		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標への移動拒否＊＊＊＊＊＊＊＊＊＊" << std::endl;
+		arrive_flag2.data = 6;
+		robot2_pub.publish(arrive_flag2);
+		robot2_test_pub.publish(goalpose);
+	}
+	else if(ac.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
+		std::cout << "＊＊＊＊＊＊＊＊＊＊PREEMPTED＊＊＊＊＊＊＊＊＊＊" << std::endl;
+		arrive_flag2.data = 7;
+		robot2_pub.publish(arrive_flag2);
+		robot2_test_pub.publish(goalpose);
+	}
+	else if(ac.getState() == actionlib::SimpleClientGoalState::LOST){
+		std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標ロスト＊＊＊＊＊＊＊＊＊＊" << std::endl;
+		arrive_flag2.data = 8;
+		robot2_pub.publish(arrive_flag2);
+		robot2_test_pub.publish(goalpose);
 	}
 }
 

@@ -165,6 +165,11 @@ int main(int argc, char **argv)
                         cout << "3 or 3" << endl;
                         SP.update_target(false);
                     }
+                    else if(SP.arrive1 == 5 || SP.arrive2 == 5)
+                    {
+                        cout << "5 or 5" << endl;
+                        SP.update_target(false);
+                    }
                     else
                     {
                         cout << "what state?" << endl;
