@@ -61,7 +61,7 @@ class server_planning
     geometry_msgs::PoseStamped final_target2_update;
     std::vector<geometry_msgs::PoseStamped> robot1TARGET;//抽出後のロボット１への目的地
     std::vector<geometry_msgs::PoseStamped> robot2TARGET;//抽出後のロボット２への目的地
-    ros::Rate rate=30;
+    ros::Rate rate=10;
     
 
     //初期にロボットのvorrnoi_gridを生成するために目的地として与える点。
@@ -335,6 +335,7 @@ void server_planning::OptimalTarget(void)
     cout << "robot2lengths size:" << robot2lengths.size() << endl;
     robot1lengths.shrink_to_fit();
     robot2lengths.shrink_to_fit();
+    for_sort.clear();
     for_sort.resize(robot1lengths.size()*robot2lengths.size());
     cout << "robot1lengths size:" << robot1lengths.size() << endl;
     cout << "robot2lengths size:" << robot2lengths.size() << endl;
@@ -346,10 +347,16 @@ void server_planning::OptimalTarget(void)
     {
         for(int j=0; j<robot2lengths.size(); j++)
         {
-            for_sort[count] = std::make_tuple(i,j,std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[j]));
-            count++;
+            if(std::get<1>(robot1lengths[i]) != 0 && std::get<1>(robot2lengths[i]) != 0)
+            {
+                for_sort[count] = std::make_tuple(i,j,std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[j]));
+                cout << "sum length: " << std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[j]) << endl;
+                cout << "for_sort num: " << std::get<2>(for_sort[count]) << endl;
+                count++;
+            }
         }
     }
+    for_sort.shrink_to_fit();
     cout << "test" << endl;
     target_sort(for_sort);
     cout << "test" << endl;
@@ -369,7 +376,7 @@ void server_planning::OptimalTarget(void)
     {
         cout << "final_target1:" << final_target1 << endl;
         cout << "final_target2:" << final_target2 << endl;
-        robot1_final_target_pub.publish(final_target1);
+        //robot1_final_target_pub.publish(final_target1);
         robot2_final_target_pub.publish(final_target2);
     }
     else
@@ -732,7 +739,7 @@ void server_planning::FT2robots(void)
         }
         cout << "test_count: " << test_count << endl;
         stop_pose.header.frame_id = robot2header;
-        target2robot1.publish(stop_pose);
+        target2robot2.publish(stop_pose);
     }
     cout << "[FT2robots end]----------------------------------------\n" << endl;
 }
@@ -986,6 +993,7 @@ int server_planning::update_target(bool reset)
     cout << "update_target_count: " << update_target_count << endl;
     cout << "robot1lengths size: " << robot1lengths.size() << endl;
     cout << "robot2lengths size: " << robot2lengths.size() << endl;
+    cout << "for_sort size: " << for_sort.size() << endl;
     if(reset == true)
     {
        update_target_count = 1;
@@ -1010,7 +1018,7 @@ int server_planning::update_target(bool reset)
     {
         cout << "final_target1_update:" << final_target1_update << endl;
         cout << "final_target2_update:" << final_target2_update << endl;
-        robot1_final_target_pub.publish(final_target1_update);
+        //robot1_final_target_pub.publish(final_target1_update);
         robot2_final_target_pub.publish(final_target2_update);
         return 1;
     }

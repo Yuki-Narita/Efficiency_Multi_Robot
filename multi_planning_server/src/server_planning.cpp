@@ -165,6 +165,13 @@ int main(int argc, char **argv)
                         cout << "3 or 3" << endl;
                         SP.update_target(false);
                     }
+                    else
+                    {
+                        cout << "what state?" << endl;
+                        cout << "SP.arrive1:" << SP.arrive1 << endl;
+                        cout << "SP.arrive2:" << SP.arrive2 << endl;
+                    }
+                    
                     SP.arrive1 = 0;
                     SP.arrive2 = 0;
                     cout << "cant_find_final_target_flag loop end" << endl;
