@@ -18,6 +18,8 @@ int main(int argc, char **argv)
         if(FS.isinput())
         {
             //ここにＦｒｏｎｔｉｅｒ＿Ｓｅａｒｃｈの一連の処理に必要な関数を書く
+            FS.robot1_costmap_queue.callOne(ros::WallDuration(0.1));
+            FS.robot2_costmap_queue.callOne(ros::WallDuration(0.1));
             FS.Storage();
             FS.Map_Init(FS.msg);//ここで配列にマップデータを格納する。
             FS.Side_Search();
@@ -26,6 +28,8 @@ int main(int argc, char **argv)
             FS.Vatical_Continuity_Search();
             FS.Add_Obstacle();
             FS.Search_Obstacle();
+            FS.Check_Target_Overlap_Costmap1(FS.robot1_costmap_data);
+            FS.Check_Target_Overlap_Costmap2(FS.robot2_costmap_data);
             FS.Publish_Data();
             FS.Publish_marker();
             FS.Memory_release();
