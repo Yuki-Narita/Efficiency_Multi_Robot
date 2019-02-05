@@ -50,8 +50,8 @@ class server_planning
     nav_msgs::Odometry robot2_odom;
     geometry_msgs::PoseStamped stop_pose;
     std::vector<geometry_msgs::PoseStamped> TARGET;//FSノードから取得したフロンティア領域
-    std::vector<std::tuple<int, float, float, float>> robot1lengths;//ロボット１の自己位置から目的地までの長さのコンテナ
-    std::vector<std::tuple<int, float, float, float>> robot2lengths;//ロボット２の自己位置から目的地までの長さのコンテナ
+    std::vector<std::tuple<int, float, float, float>> robot1lengths;//ロボット１の自己位置から目的地までの長さのコンテナ<seq、パスの長さ、目的地x座標、目的地y座標>
+    std::vector<std::tuple<int, float, float, float>> robot2lengths;//ロボット２の自己位置から目的地までの長さのコンテナ<seq、パスの長さ、目的地x座標、目的地y座標>
     std::vector<std::tuple<int, int, float>> for_sort;//組み合わせたロボット同士の長さが小さい順にソートする用＜robot1_seq, robot2_seq, length＞
     int robot1path_count=0;
     int robot2path_count=0;
@@ -376,7 +376,7 @@ void server_planning::OptimalTarget(void)
     {
         cout << "final_target1:" << final_target1 << endl;
         cout << "final_target2:" << final_target2 << endl;
-        //robot1_final_target_pub.publish(final_target1);
+        robot1_final_target_pub.publish(final_target1);
         robot2_final_target_pub.publish(final_target2);
     }
     else
@@ -1016,11 +1016,19 @@ int server_planning::update_target(bool reset)
     check_avoid_target = sqrt(pow(final_target1_update.pose.position.x - (final_target2_update.pose.position.x + 3.0), 2) + pow(final_target1_update.pose.position.y - (final_target2_update.pose.position.y), 2));
     if(check_avoid_target >= avoid_target)
     {
-        cout << "final_target1_update:" << final_target1_update << endl;
-        cout << "final_target2_update:" << final_target2_update << endl;
-        //robot1_final_target_pub.publish(final_target1_update);
-        robot2_final_target_pub.publish(final_target2_update);
-        return 1;
+        if((final_target1_update.pose.position.x != final_target2_update.pose.position.x) || (final_target1_update.pose.position.y != final_target2_update.pose.position.y))
+        {
+            cout << "final_target1_update:" << final_target1_update << endl;
+            cout << "final_target2_update:" << final_target2_update << endl;
+            robot1_final_target_pub.publish(final_target1_update);
+            robot2_final_target_pub.publish(final_target2_update);
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+        
     }
     else
     {

@@ -7,21 +7,14 @@ robot1_action::robot1_action()
 	robot1_sub_nh.setCallbackQueue(&robot1_sub_queue);
 	robot1_odom_sub_nh.setCallbackQueue(&robot1_odom_queue);
     robot1_sub = robot1_sub_nh.subscribe("/robot1/final_target", 1, &robot1_action::data_setter, this);
-	robot1_odom_sub = robot1_odom_sub_nh.subscribe("/robot1/odom", 1, &robot1_action::escape_robot_stack, this);
+	//robot1_odom_sub = robot1_odom_sub_nh.subscribe("/robot1/odom", 1, &robot1_action::escape_robot_stack, this);
 	robot1_pub = robot1_pub_nh.advertise<std_msgs::Int8>("/arrive_flag1", 1);
 	robot1_test_pub = robot1_test_pub_nh.advertise<geometry_msgs::PoseStamped>("/robot1/move_base_simple/goal", 1);
 	
 	robot1GoalPub = robot1GoalNh.advertise<visualization_msgs::Marker>("/robot1/action_goal",1);
 }
 robot1_action::~robot1_action(){}
-
-void robot1_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
-{
-	x = msg -> pose.position.x;
-	y = msg -> pose.position.y;
-	wait_flag = true;
-}
-
+/*
 void robot1_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 {
 	std::cout << "escape_robot_stack start" << std::endl;
@@ -50,7 +43,7 @@ void robot1_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 	}	
 	std::cout << "escape_robot_stack end" << std::endl;
 }
-
+*/
 void robot1_action::setGoalMarker(const double x,const double y, const std::string frameId)
 {
 	visualization_msgs::Marker marker;
@@ -82,8 +75,12 @@ void robot1_action::setGoalMarker(const double x,const double y, const std::stri
 
 	robot1GoalPub.publish(marker);
 }
-
-
+void robot1_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
+{
+	x = msg -> pose.position.x;
+	y = msg -> pose.position.y;
+	wait_flag = true;
+}
 void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,std::string movebaseNode ){
 
 	std::cout << "＊＊＊＊＊＊＊＊＊＊目標座標を受信＊＊＊＊＊＊＊＊＊＊" << std::endl;
@@ -163,7 +160,7 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "robot_action");
+    ros::init(argc, argv, "robot1_action");
 	std::cout << "test" << std::endl;
 	robot1_action R1A;
 

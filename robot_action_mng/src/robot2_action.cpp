@@ -6,7 +6,7 @@ robot2_action::robot2_action()
 	robot2_sub_nh.setCallbackQueue(&robot2_sub_queue);
     robot2_odom_sub_nh.setCallbackQueue(&robot2_odom_queue);
 	robot2_sub = robot2_sub_nh.subscribe("/robot2/final_target", 1, &robot2_action::data_setter, this);
-	robot2_odom_sub = robot2_odom_sub_nh.subscribe("/robot2/odom",1,&robot2_action::escape_robot_stack,this);
+	//robot2_odom_sub = robot2_odom_sub_nh.subscribe("/robot2/odom",1,&robot2_action::escape_robot_stack,this);
 	robot2_pub = robot2_pub_nh.advertise<std_msgs::Int8>("/arrive_flag2", 1);
 	robot2_test_pub = robot2_test_pub_nh.advertise<geometry_msgs::PoseStamped>("/robot2/move_base_simple/goal",1);
 	
@@ -14,6 +14,7 @@ robot2_action::robot2_action()
 }
 robot2_action::~robot2_action(){}
 
+/*
 void robot2_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 {
 	static nav_msgs::Odometry previous, current;
@@ -38,6 +39,7 @@ void robot2_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 		}
 	}	
 } 
+*/
 
 void robot2_action::setGoalMarker(const double x,const double y, const std::string frameId)
 {
@@ -196,7 +198,7 @@ void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "robot_action");
+    ros::init(argc, argv, "robot2_action");
 	robot2_action R2A;
 
 	R2A.param2.getParam("/multi_planning_server/robot2_action/map_frame2", R2A.frame_id);

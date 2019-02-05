@@ -21,7 +21,7 @@ class robot1_action
         ros::CallbackQueue robot1_sub_queue;
         ros::CallbackQueue robot1_odom_queue;
         ros::Subscriber robot1_sub;
-        ros::Subscriber robot1_odom_sub;
+        //ros::Subscriber robot1_odom_sub;
         ros::Publisher robot1_pub;
         ros::Publisher robot1_test_pub;
         ros::NodeHandle param1;
@@ -42,7 +42,7 @@ class robot1_action
         ~robot1_action();
         void data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg);
         void moveToGoal(double goalX,double goalY,std::string mapFrame,std::string movebaseNode);
-        void escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom);
+        //void escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom);
         
         void setGoalMarker(const double x,const double y,const std::string frameId);
 
