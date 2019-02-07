@@ -867,12 +867,12 @@ void server_planning::enhance_voronoi_map(void)
         }
     }
     //拡張したボロノイ配列にトピックから受け取ったボロノイ図の情報を反映する。
-    int shift_y;
-    shift_y = (int)robot2_init_x*(-1.0);
-    cout << "   shift_y: " << shift_y <<endl;
+    int shift_x;
+    shift_x = (int)robot2_init_x*(-1.0);
+    cout << "   shift_x: " << shift_x <<endl;
     for(int y = 0; y < r2_map_height; y++)
     {
-        for(int x = shift_y; x < r2_map_width; x++)
+        for(int x = shift_x; x < r2_map_width; x++)
         {
             r2_enhanced_Voronoi_grid_array[x][y] = r2_Voronoi_grid_array[x][y];
         }

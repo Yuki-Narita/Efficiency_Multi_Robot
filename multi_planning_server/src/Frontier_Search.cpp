@@ -22,14 +22,14 @@ int main(int argc, char **argv)
             FS.robot2_costmap_queue.callOne(ros::WallDuration(0.1));
             FS.Storage();
             FS.Map_Init(FS.msg);//ここで配列にマップデータを格納する。
+            FS.r1_enhanced_costmap(FS.robot1_costmap_data);
+            FS.r2_enhanced_costmap(FS.robot2_costmap_data);
             FS.Side_Search();
             FS.Vatical_Search();
             FS.Side_Continuity_Search();
             FS.Vatical_Continuity_Search();
             FS.Add_Obstacle();
             FS.Search_Obstacle();
-            FS.Check_Target_Overlap_Costmap1(FS.robot1_costmap_data);
-            FS.Check_Target_Overlap_Costmap2(FS.robot2_costmap_data);
             FS.Publish_Data();
             FS.Publish_marker();
             FS.Memory_release();

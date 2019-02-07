@@ -74,6 +74,8 @@ class Frontier_Search
 		int **robot2_costmap_array;
         int **point;
         int **frontier_flag;
+		int **r1_enhanced_costmap_array;
+		int **r2_enhanced_costmap_array;
 		bool input;
 
 		//vis用]
@@ -93,6 +95,13 @@ class Frontier_Search
 		int robot2_costmap_width;
 		std::vector<int> robot1_costmap_data;
 		std::vector<int> robot2_costmap_data;
+
+		//拡張コストマップのグローバルコストマップへのシフトのために必要なロボットの初期位置用の変数
+		ros::NodeHandle get_param_nh;
+		int robot1_init_x;
+		int robot1_init_y;
+		int robot2_init_x;
+		int robot2_init_y;
 
         ros::CallbackQueue queueF;
 		nav_msgs::OccupancyGrid msg;
@@ -116,6 +125,10 @@ class Frontier_Search
 			robot1_costmao_sub = robot2_costmap_nh.subscribe("/robot2/move_base/global_costmap/costmap", 1, &Frontier_Search::Robot2_Costmap_Data_Setter, this);
     		pub0 = fp.advertise<geometry_msgs::PoseArray>("/Frontier_Target", 1);
 			vis_pub = vis.advertise<visualization_msgs::Marker>("/vis_marker/Frontier", 1);
+			get_param_nh.getParam("/robot1_init_x",robot1_init_x);
+			get_param_nh.getParam("/robot1_init_y",robot1_init_y);
+			get_param_nh.getParam("/robot2_init_x",robot2_init_x);
+			get_param_nh.getParam("/robot2_init_y",robot2_init_y);
 			std::cout << "search_len :" << search_len << std::endl;
 			std::cout << "robot_diameter:" << robot_diameter << std::endl;
 			std::cout << "pre_fronum:" << pre_fronum << std::endl;
@@ -138,8 +151,8 @@ class Frontier_Search
         void Search_Obstacle(void);//
 		void Robot1_Costmap_Data_Setter(const nav_msgs::OccupancyGrid::ConstPtr& msg);
 		void Robot2_Costmap_Data_Setter(const nav_msgs::OccupancyGrid::ConstPtr& msg);
-		void Check_Target_Overlap_Costmap1(const std::vector<int> &map_data);
-		void Check_Target_Overlap_Costmap2(const std::vector<int> &map_data);
+		void r1_enhanced_costmap(const std::vector<int> &map_data);
+		void r2_enhanced_costmap(const std::vector<int> &map_data);
         void Publish_Data(void);//計算した結果をパブリッシャー用に変換する関数。
 		void Publish_marker(void);
 		void Memory_release(void);
@@ -190,6 +203,14 @@ void Frontier_Search::Memory_release(void)
                 delete[] frontier_flag[p];
         }
         delete[] frontier_flag;
+		for(int p=0;p<x;p++)
+		{
+			delete[] r1_enhanced_costmap_array[p];
+		}
+		for(int p=0;p<x;p++)
+		{
+			delete[] r2_enhanced_costmap_array[p];
+		}
 		std::cout << "メモリ解放" << std::endl;
 }
 
@@ -210,6 +231,16 @@ void Frontier_Search::Storage(void)
 		robot2_costmap_array = new int*[robot2_costmap_width];
         for(int p=0;p<robot2_costmap_width;p++){
                 robot2_costmap_array[p] = new int[robot2_costmap_height];
+        }
+		//ロボット１用の拡張コストマップ
+		r1_enhanced_costmap_array = new int*[x];
+        for(int p=0;p<x;p++){
+                r1_enhanced_costmap_array[p] = new int[y];
+        }
+		//ロボット２用の拡張コストマップ
+		r2_enhanced_costmap_array = new int*[x];
+        for(int p=0;p<x;p++){
+                r2_enhanced_costmap_array[p] = new int[y];
         }
 
         //int frontier_flag[x][y];//探査済みと未探査の境界を判定するフラグ
@@ -240,6 +271,8 @@ void Frontier_Search::Map_Init(nav_msgs::OccupancyGrid& msg)
 			}
 			frontier_flag[j][i] = 0;
 			point[j][i] = 0;
+			r1_enhanced_costmap_array[j][i] = 0;
+			r2_enhanced_costmap_array[j][i] = 0;
       		k++;
     	}
   	}
@@ -297,23 +330,18 @@ void Frontier_Search::Search_Obstacle(void)
 			half_leftx = half_sq;
 		}
 
-
 		if(pre_frox[k]+half_sq > (x-1)){
 			half_rightx = (x-1)-pre_frox[k];
 		}
 		else{
 			half_rightx = half_sq;
 		}
-
-
 		if(pre_froy[k]-half_sq < 0){
 			half_topy = pre_froy[k];
 		}
 		else{
 			half_topy = half_sq;
 		}
-
-
 		if(pre_froy[k]+half_sq > (y-1)){
 			half_bottomy = (y-1)-pre_froy[k];
 		}
@@ -330,10 +358,23 @@ void Frontier_Search::Search_Obstacle(void)
 			}
 		}
 		//std::cout << "after frontier_sum:" << frontier_sum << std::endl;
-
 		if(frontier_sum>100){
 			point[pre_frox[k]][pre_froy[k]] = 0;
 		}
+		//コストマップと比較して目的地を絞る処理をする。
+		for(i=(pre_froy[k]-half_topy);i<(pre_froy[k]+half_bottomy+1);i++){
+			for(j=(pre_frox[k]-half_leftx);j<(pre_frox[k]+half_rightx+1);j++){
+				if(r1_enhanced_costmap_array[j][i] != 0)
+				{
+					point[pre_frox[k]][pre_froy[k]] = 0;
+				}
+				if(r2_enhanced_costmap_array[j][i] != 0)
+				{
+					point[pre_frox[k]][pre_froy[k]] = 0;
+				}
+			}
+		}
+
 	}
 		//最終的な未探査領域を配列に格納
 	for(j=0;j<x;j++){
@@ -594,25 +635,41 @@ void Frontier_Search::Robot2_Costmap_Data_Setter(const nav_msgs::OccupancyGrid::
 	}
 }
 
-void Frontier_Search::Check_Target_Overlap_Costmap1(const std::vector<int> &map_data)
+void Frontier_Search::r1_enhanced_costmap(const std::vector<int> &map_data)
 {
-	k=0;
+	int k=0;
 	std::cout << "start:ロボット１のコストマップデータを配列に格納" << std::endl;
 	std::cout << "X:" << x << "Y:" << y << "K:" << k << std::endl; 
 	for(i=0;i<robot1_costmap_height;i++){
     	for(j=0;j<robot1_costmap_width;j++){
-      		robot1_costmap_array[j][i] = map_data.data[k];
-			if(robot1_costmap_array[j][i]!=0)
-			{	
-				
-			}
-      		k++;
+      		robot1_costmap_array[j][i] = map_data[k];
+			k++;
     	}
   	}
-	
-	std::cout << "end  :地図データを配列に格納" << std::endl;
+	for(i=0;i<y;i++){
+    	for(j=0;j<x;j++){
+      		r1_enhanced_costmap_array[j][i] = robot1_costmap_array[j][i];
+    	}
+  	}
+	std::cout << "end  :ロボット２のコストマップデータを配列に格納" << std::endl;
 }
-void Frontier_Search::Check_Target_Overlap_Costmap2(const std::vector<int> &map_data)
+void Frontier_Search::r2_enhanced_costmap(const std::vector<int> &map_data)
 {
-
+	int k=0;
+	std::cout << "start:ロボット１のコストマップデータを配列に格納" << std::endl;
+	std::cout << "X:" << x << "Y:" << y << "K:" << k << std::endl; 
+	for(i=0;i<robot2_costmap_height;i++){
+    	for(j=0;j<robot2_costmap_width;j++){
+      		robot2_costmap_array[j][i] = map_data[k];
+			k++;
+    	}
+  	}
+	int shift_x;
+	shift_x = (int)robot2_init_x*(-1.0);
+	for(i=0;i<y;i++){
+    	for(j=shift_x;j<x;j++){
+      		r1_enhanced_costmap_array[j][i] = robot1_costmap_array[j][i];
+    	}
+  	}
+	std::cout << "end  :ロボット２のコストマップデータを配列に格納" << std::endl;
 }
