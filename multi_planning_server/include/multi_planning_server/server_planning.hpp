@@ -227,8 +227,8 @@ avoid_target(3)
     target2robot2 = t2r2.advertise<geometry_msgs::PoseStamped>("/robot2/move_base_simple/goal",1);
     robot1_final_target_pub = robot1_final_target_nh.advertise<geometry_msgs::PoseStamped>("/robot1/final_target",1);
     robot2_final_target_pub = robot2_final_target_nh.advertise<geometry_msgs::PoseStamped>("/robot2/final_target",1);
-    path_sub1=nh1.subscribe("/robot1/move_base/VoronoiPlanner/plan", 1000, &server_planning::robot1path, this);
-    path_sub2=nh2.subscribe("/robot2/move_base/VoronoiPlanner/plan", 1000, &server_planning::robot2path, this);
+    path_sub1=nh1.subscribe("/robot1/costmap_to_voronoi/plan", 1000, &server_planning::robot1path, this);
+    path_sub2=nh2.subscribe("/robot2/costmap_to_voronoi/plan", 1000, &server_planning::robot2path, this);
     Target_sub=fn.subscribe("/Frontier_Target", 1, &server_planning::frontier_target_CB, this);
     map_sub=mn.subscribe("/server/grid_map_merge/merge_map", 1, &server_planning::map_input, this);
     robot1_odom_sub=robot1_odom_nh.subscribe("/robot1/odom", 1, &server_planning::robot1_odom_CB, this);
