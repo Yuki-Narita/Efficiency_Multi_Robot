@@ -233,8 +233,8 @@ avoid_target(3)
     map_sub=mn.subscribe("/server/grid_map_merge/merge_map", 1, &server_planning::map_input, this);
     robot1_odom_sub=robot1_odom_nh.subscribe("/robot1/odom", 1, &server_planning::robot1_odom_CB, this);
     robot2_odom_sub=robot2_odom_nh.subscribe("/robot2/odom", 1, &server_planning::robot2_odom_CB, this);
-    r1_voronoi_grid_sub=r1_voronoi_map_nh.subscribe("/robot1/move_base/VoronoiPlanner/voronoi_grid", 1, &server_planning::r1_voronoi_map_CB, this);
-    r2_voronoi_grid_sub=r2_voronoi_map_nh.subscribe("/robot2/move_base/VoronoiPlanner/voronoi_grid", 1, &server_planning::r2_voronoi_map_CB, this);
+    r1_voronoi_grid_sub=r1_voronoi_map_nh.subscribe("/robot1/costmap_to_voronoi/voronoi_grid", 1, &server_planning::r1_voronoi_map_CB, this);
+    r2_voronoi_grid_sub=r2_voronoi_map_nh.subscribe("/robot2/costmap_to_voronoi/voronoi_grid", 1, &server_planning::r2_voronoi_map_CB, this);
     arrive1_sub = arrive1_nh.subscribe("/arrive_flag1", 1, &server_planning::arrive1_flag, this);
     arrive2_sub = arrive2_nh.subscribe("/arrive_flag2", 1, &server_planning::arrive2_flag, this);
     get_param_nh.getParam("/robot1_init_x",robot1_init_x);
