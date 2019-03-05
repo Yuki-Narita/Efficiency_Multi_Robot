@@ -132,8 +132,6 @@ int main(int argc, char **argv)
                 SP.Extraction_Target();
                 SP.Publish_marker();
                 SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
-                SP.queue1.callAvailable();
-                SP.queue2.callAvailable();
                 SP.OptimalTarget();
                 SP.arrive1 = 0;
                 SP.arrive2 = 0;
