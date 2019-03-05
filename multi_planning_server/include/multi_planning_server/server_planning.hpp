@@ -206,7 +206,7 @@ class server_planning
 server_planning::server_planning():
 robot_front_point(0.5),
 search_length(0.1),
-avoid_target(3)
+avoid_target(0.1)
 {
     nh1.setCallbackQueue(&queue1);
     nh2.setCallbackQueue(&queue2);
@@ -727,10 +727,12 @@ void server_planning::FT2robots(void)
                 {
                     target2robot1.publish(robot1TARGET[i]);
                     int count_robot1_update_flag_callback_executed = 0;
+                    cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
                     do
                     {
-                        queue1.callOne(ros::WallDuration(1.0));
+                        queue1.callOne(ros::WallDuration(0.2));
                         count_robot1_update_flag_callback_executed++;
+                        cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
                     }while(count_robot1_update_flag_callback_executed <= 5 && !robot1_path_update_flag);
                 }
             }
@@ -761,7 +763,7 @@ void server_planning::FT2robots(void)
                     int count_robot2_update_flag_callback_executed = 0;
                     do
                     {
-                        queue2.callOne(ros::WallDuration(1.0));
+                        queue2.callOne(ros::WallDuration(0.2));
                         count_robot2_update_flag_callback_executed++;
                     }while(count_robot2_update_flag_callback_executed <= 5 && !robot2_path_update_flag);
                 }
