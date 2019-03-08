@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 
     server_planning SP;
 
-    
+/*
    //ロボットの個数をパラメータサーバーから取得
     robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
     robot_num_nh.getParam("/multi_planning_server/given_robot_num",given_robot_num);
@@ -76,8 +76,7 @@ int main(int argc, char **argv)
         }
 
     }
-
-
+*/
     /*
     turn_req_pub = turn_nh.advertise<std_msgs::String>("/firstturn",1);
     SP.pub_msg.data = "turn now";
@@ -89,6 +88,7 @@ int main(int argc, char **argv)
         ros::spinOnce();
     }
     */
+   
    cout << "---------------------【SERVER_PLANINNG START】-------------------" << endl;
     while((!SP.odom_queue_flag || !SP.r1_voronoi_map_update) && ros::ok())
     {
@@ -138,8 +138,8 @@ int main(int argc, char **argv)
                 cout << "cant_find_final_target_flag" << SP.cant_find_final_target_flag << endl;
                 while(SP.cant_find_final_target_flag == 0 && ros::ok())
                 {
-                    cout << "arrive1" << SP.arrive1 << endl;
-                    cout << "arrive2" << SP.arrive2 << endl;
+                    cout << "arrive1:" << SP.arrive1 << endl;
+                    cout << "arrive2:" << SP.arrive2 << endl;
                     while(SP.arrive1 == 0 && SP.arrive2 == 0 && ros::ok())
                     {
                         SP.arrive1_queue.callOne();
@@ -153,12 +153,12 @@ int main(int argc, char **argv)
                         cout << "1 or 1" << endl;
                         break;
                     }
-                    else if(SP.arrive1 == 2 || SP.arrive2 == 2)
+                    else if(SP.arrive1 == 2 || SP.arrive2 == 2)//目標へのパス生成不可
                     {
                         cout << "2 or 2" << endl;
                         SP.update_target(false);
                     }
-                    else if(SP.arrive1 == 3 || SP.arrive2 == 3)
+                    else if(SP.arrive1 == 3 || SP.arrive2 == 3)//目標への移動不可
                     {
                         cout << "3 or 3" << endl;
                         SP.update_target(false);

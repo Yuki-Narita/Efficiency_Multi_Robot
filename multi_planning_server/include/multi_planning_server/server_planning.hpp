@@ -94,6 +94,9 @@ class server_planning
     ros::Publisher vis_pub;
     ros::NodeHandle vis_nh;
 
+    //pathを受け取るときにどのくらいの時間待機するかの時間（秒）
+    int receive_robot_path_wait_time;
+
 
     public:
     server_planning();
@@ -206,7 +209,8 @@ class server_planning
 server_planning::server_planning():
 robot_front_point(0.5),
 search_length(0.1),
-avoid_target(0.1)
+avoid_target(0.1),
+receive_robot_path_wait_time(2)
 {
     nh1.setCallbackQueue(&queue1);
     nh2.setCallbackQueue(&queue2);
@@ -276,6 +280,8 @@ void server_planning::frontier_target_CB(const geometry_msgs::PoseArray::ConstPt
     {
         TARGET[i].header = Target->header;
         TARGET[i].pose = Target->poses[i];
+        cout << "TARGET : " << TARGET[i].header << endl;
+        cout << "TARGET : " << TARGET[i].pose << endl;
     }
     frontier_target2map(TARGET);
     queueF_judge = true;
@@ -366,12 +372,10 @@ void server_planning::OptimalTarget(void)
     final_target1.pose.position.y = std::get<3>(robot1lengths[std::get<0>(for_sort[0])]);
     final_target1.header.frame_id = robot1header;
     final_target1.pose.orientation.w = 1.0;
-    //final_target1_update.push_back(final_target1);
     final_target2.pose.position.x = std::get<2>(robot2lengths[std::get<1>(for_sort[0])]);
     final_target2.pose.position.y = std::get<3>(robot2lengths[std::get<1>(for_sort[0])]);
     final_target2.header.frame_id = robot2header;
     final_target2.pose.orientation.w = 1.0;
-    //final_target2_update.push_back(final_target2);
     check_avoid_target = sqrt(pow(final_target1.pose.position.x - (final_target2.pose.position.x + 3.0), 2) + pow(final_target1.pose.position.y - (final_target2.pose.position.y), 2));
     cout << "min_length: " << min_length << endl;
     if(check_avoid_target >= avoid_target)
@@ -383,9 +387,17 @@ void server_planning::OptimalTarget(void)
     }
     else
     {
-        while(update_target(false) == 0 && ros::ok())
+        while(ros::ok())
         {
-            update_target(false);
+            if(update_target(false) == 1)
+            {
+                break;
+            }
+            else
+            {
+                update_target(false);
+            }
+            
         }
     }
     cout << "[OptimalTarget]----------------------------------------" << endl;
@@ -551,6 +563,7 @@ void server_planning::Extraction_Target(void)
                 t_target.pose.orientation.y = 0.0;
                 t_target.pose.orientation.z = 0.0;
                 t_target.pose.orientation.w = 1.0;
+                cout << "t_target" << t_target << endl;
                 Extraction_Target_r1.push_back(t_target);
             }
         }
@@ -725,15 +738,17 @@ void server_planning::FT2robots(void)
                 if(i == Extraction_Target_r1.size()-1)break;
                 else
                 {
+                    cout << "robot1 target : " << robot1TARGET[i] << endl;
                     target2robot1.publish(robot1TARGET[i]);
                     int count_robot1_update_flag_callback_executed = 0;
-                    cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
+                    //cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
                     do
                     {
                         queue1.callOne(ros::WallDuration(0.2));
                         count_robot1_update_flag_callback_executed++;
-                        cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
-                    }while(count_robot1_update_flag_callback_executed <= 5 && !robot1_path_update_flag);
+                    //    cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
+                    }while(count_robot1_update_flag_callback_executed <= 5 * receive_robot_path_wait_time && !robot1_path_update_flag);
+                    if(count_robot1_update_flag_callback_executed >= 5 * receive_robot_path_wait_time)break;
                 }
             }
             cout << "test" << endl;
@@ -765,11 +780,11 @@ void server_planning::FT2robots(void)
                     {
                         queue2.callOne(ros::WallDuration(0.2));
                         count_robot2_update_flag_callback_executed++;
-                    }while(count_robot2_update_flag_callback_executed <= 5 && !robot2_path_update_flag);
+                    }while(count_robot2_update_flag_callback_executed <= 5 * receive_robot_path_wait_time && !robot2_path_update_flag);
+                    if(count_robot2_update_flag_callback_executed >= 5 * receive_robot_path_wait_time)break;
                 }
             }
             robot2_path_update_flag = false;
-
             test_count++;
         }
         cout << "test_count: " << test_count << endl;
@@ -1003,8 +1018,6 @@ void server_planning::Clear_Num(void)
 {
     robot1path_count = 0;
     robot2path_count = 0;
-    queue1.clear();
-    queue2.clear();
     cout << "Clear_Num" << endl;
 }
 void server_planning::arrive1_flag(const std_msgs::Int8::ConstPtr &msg)
@@ -1050,6 +1063,7 @@ int server_planning::update_target(bool reset)
     final_target2_update.header.frame_id = robot2header;
     final_target2_update.pose.orientation.w = 1.0;
     update_target_count++;
+
     check_avoid_target = sqrt(pow(final_target1_update.pose.position.x - (final_target2_update.pose.position.x + 3.0), 2) + pow(final_target1_update.pose.position.y - (final_target2_update.pose.position.y), 2));
     if(check_avoid_target >= avoid_target)
     {
