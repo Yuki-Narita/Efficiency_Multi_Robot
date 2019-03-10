@@ -123,10 +123,10 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	goalpose.pose.position.x = goalX;
 	goalpose.pose.position.y = goalY;
 	goalpose.pose.position.z = 0.0;
-	goalpose.pose.orientation.x=0.0;
-	goalpose.pose.orientation.y=0.0;
-	goalpose.pose.orientation.z=0.0;
-	goalpose.pose.orientation.w=1.0;
+	goalpose.pose.orientation.x = 0.0;
+	goalpose.pose.orientation.y = 0.0;
+	goalpose.pose.orientation.z = 0.0;
+	goalpose.pose.orientation.w = 1.0;
 	goalpose.header.frame_id = mapFrame;
 
 	std::cout << "＊＊＊＊＊＊＊＊＊＊経路を作成中＊＊＊＊＊＊＊＊＊＊" << std::endl;
@@ -174,14 +174,14 @@ int main(int argc, char** argv)
 
     while(ros::ok())
     {
-		R1A.arrive_flag1.data = false;
-        R1A.robot1_sub_queue.callOne();
+		R1A.arrive_flag1.data = 0;
+		R1A.robot1_pub.publish(R1A.arrive_flag1);
+        R1A.robot1_sub_queue.callOne(ros::WallDuration(0.1));
 		if(R1A.wait_flag)
 		{
         	R1A.moveToGoal(R1A.x,R1A.y,R1A.frame_id,R1A.move_base_node);
 		}
 		R1A.wait_flag = false;
-		R1A.rate.sleep();
     }
     return 0;
 }

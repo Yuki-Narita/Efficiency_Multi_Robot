@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 
     server_planning SP;
 
-/*
+
    //ロボットの個数をパラメータサーバーから取得
     robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
     robot_num_nh.getParam("/multi_planning_server/given_robot_num",given_robot_num);
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
         }
 
     }
-*/
+
     /*
     turn_req_pub = turn_nh.advertise<std_msgs::String>("/firstturn",1);
     SP.pub_msg.data = "turn now";
@@ -94,22 +94,17 @@ int main(int argc, char **argv)
     {
         SP.robot1_odom_queue.callOne(ros::WallDuration(1));
         SP.r1_voronoi_map_queue.callOne(ros::WallDuration(0.1));
-        cout << "odom_queue_flag:" << SP.odom_queue_flag << endl;
-        cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
     }
     SP.odom_queue_flag=false;
-    cout << "test" << endl;
     sleep(1);
     int count2 = 0;
     while((!SP.odom_queue_flag || !SP.r2_voronoi_map_update) && ros::ok())
     {
         SP.robot2_odom_queue.callOne(ros::WallDuration(1));
         SP.r2_voronoi_map_queue.callOne(ros::WallDuration(0.1));
-        cout << "odom_queue_flag:" << SP.odom_queue_flag << endl;
-        cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
     }
     //メインループ
-    while(ros::ok())
+    while(SP.Search_End_Flag = false && ros::ok())
     {
         SP.queueM.callOne(ros::WallDuration(1));
         if(SP.map_isinput())
@@ -124,30 +119,31 @@ int main(int argc, char **argv)
             SP.r1_voronoi_map_queue.callOne(ros::WallDuration(1));//ロボット１から出てきたボロノイ図を蓄えているキューを購読。ボロノイ図用の配列を確保し、そこに情報を反映する。r1_voronoi_map_updateフラグはここで立つ
             SP.r2_voronoi_map_queue.callOne(ros::WallDuration(1));//ロボット２から出てきたボロノイ図を蓄えているキューを購読。ボロノイ図用の配列を確保し、そこに情報を反映する。r2_voronoi_map_updateフラグはここで立つ
             //マップとボロノイ図を比較してボロノイ経路上の目的地を絞り込む
-            cout << "r1_voronoi_map_update:" << SP.r1_voronoi_map_update << endl;
-            cout << "r2_voronoi_map_update:" << SP.r2_voronoi_map_update << endl;
             if(SP.r1_voronoi_map_update && SP.r2_voronoi_map_update)
             {
-                cout << "r1 and r2 voronoi_map_update" << endl;
                 SP.Extraction_Target();
                 SP.Publish_marker();
                 SP.FT2robots();//取得したフロンティア領域を各ロボットの目的地として配布。
                 SP.OptimalTarget();
                 SP.arrive1 = 0;
                 SP.arrive2 = 0;
-                cout << "cant_find_final_target_flag" << SP.cant_find_final_target_flag << endl;
-                while(SP.cant_find_final_target_flag == 0 && ros::ok())
+                if(SP.cant_find_final_target_flag != true)
                 {
-                    cout << "arrive1:" << SP.arrive1 << endl;
-                    cout << "arrive2:" << SP.arrive2 << endl;
+                    SP.robot1_and_robot2_Extraction_Target_is_not_find++;
+                    if(SP.robot1_and_robot2_Extraction_Target_is_not_find == 10)
+                    {
+                        SP.Search_End_Flag = true;
+                    }
+
+                }
+                while(SP.cant_find_final_target_flag == false && SP.Search_End_Flag== false && ros::ok())
+                {
                     while(SP.arrive1 == 0 && SP.arrive2 == 0 && ros::ok())
                     {
                         SP.arrive1_queue.callOne();
                         SP.arrive2_queue.callOne();
                         sleep(0.1);
                     }
-                    cout << "arrive1" << SP.arrive1 << endl;
-                    cout << "arrive2" << SP.arrive2 << endl;
                     if(SP.arrive1 == 1 || SP.arrive2 == 1)
                     {
                         cout << "1 or 1" << endl;
@@ -156,12 +152,24 @@ int main(int argc, char **argv)
                     else if(SP.arrive1 == 2 || SP.arrive2 == 2)//目標へのパス生成不可
                     {
                         cout << "2 or 2" << endl;
-                        SP.update_target(false);
+                        while(SP.update_target(false) != 1)
+                        {
+                            int return_test1;
+                            return_test1 = SP.update_target(false);
+                            cout << "return_test : " << return_test1 << endl;
+                        }
                     }
                     else if(SP.arrive1 == 3 || SP.arrive2 == 3)//目標への移動不可
                     {
                         cout << "3 or 3" << endl;
-                        SP.update_target(false);
+                        cout << "SP.arrive1:" << SP.arrive1 << endl;
+                        cout << "SP.arrive2:" << SP.arrive2 << endl;
+                        while(SP.update_target(false) != 1)
+                        {
+                            int return_test2;
+                            return_test2 = SP.update_target(false);
+                            cout << "return_test : " << return_test2 << endl;
+                        }
                     }
                     else
                     {
@@ -229,6 +237,7 @@ int main(int argc, char **argv)
         cout << "main loop ended" << endl;
         cout << "\n" << endl;
     }
+    SP.Search_End_Flag = false;
     SP.timing_int.data = 2;
     timing_pub.publish(SP.timing_int);
     robot_num_nh.setParam("/multi_planning_server/robot_num",0);

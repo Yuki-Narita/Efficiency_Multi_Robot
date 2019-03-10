@@ -14,6 +14,13 @@ robot2_action::robot2_action()
 }
 robot2_action::~robot2_action(){}
 
+void robot2_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
+{
+	x = msg -> pose.position.x;
+	y = msg -> pose.position.y;
+	wait_flag = true;
+}
+
 void robot2_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 {
 	static nav_msgs::Odometry previous, current;
@@ -29,14 +36,17 @@ void robot2_action::escape_robot_stack(const nav_msgs::Odometry::ConstPtr &odom)
 	check_diff_y = diff_y * 1000;
 	if(check_diff_x == 0 && check_diff_y == 0)
 	{
+		std::cout << "if" << std::endl;
 		static int count = 0;
 		count++;
 		if(count == 10)
 		{
 			goalstate = actionlib::SimpleClientGoalState::ABORTED;
 			check_robot_stack = true;
+			std::cout << "escape stack" << std::endl;
 		}
 	}	
+	std::cout << "escape_robot_stack end" << std::endl;
 } 
 
 void robot2_action::setGoalMarker(const double x,const double y, const std::string frameId)
@@ -69,13 +79,6 @@ void robot2_action::setGoalMarker(const double x,const double y, const std::stri
     marker.color.a = 1.0;
 
 	robot2GoalPub.publish(marker);
-}
-
-void robot2_action::data_setter(const geometry_msgs::PoseStamped::ConstPtr &msg)
-{
-	x = msg -> pose.position.x;
-	y = msg -> pose.position.y;
-	wait_flag = true;
 }
 
 void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,std::string movebaseNode ){
@@ -126,7 +129,7 @@ void robot2_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	std::cout << "＊＊＊＊＊＊＊＊＊＊経路を作成中＊＊＊＊＊＊＊＊＊＊" << std::endl;
 	ac.sendGoal(goal);
 	std::cout << "＊＊＊＊＊＊＊＊＊＊sendend＊＊＊＊＊＊＊＊＊＊" << std::endl;
-	while(ac.waitForResult(ros::Duration(1.0)) != true && ros::ok())
+	while(ac.waitForResult(ros::Duration(1.0)) != true && check_robot_stack != true && ros::ok())
 	{
 		actionlib::SimpleClientGoalState check_state = ac.getState();
 		std::cout << "state: " <<  check_state.toString() << std::endl;
@@ -165,14 +168,15 @@ int main(int argc, char** argv)
 	
 	while(ros::ok())
     {
-		R2A.arrive_flag2.data = false;
-        R2A.robot2_sub_queue.callOne();
+		R2A.arrive_flag2.data = 0;
+		R2A.robot2_pub.publish(R2A.arrive_flag2);
+		std::cout << "arrive_flag2 published" << std::endl;
+        R2A.robot2_sub_queue.callOne(ros::WallDuration(0.1));
 		if(R2A.wait_flag)
 		{
         	R2A.moveToGoal(R2A.x,R2A.y,R2A.frame_id,R2A.move_base_node);
 		}
 		R2A.wait_flag = false;
-		R2A.rate.sleep();
     }
     return 0;
 }

@@ -52,8 +52,8 @@ class server_planning
     nav_msgs::Odometry robot2_odom;
     geometry_msgs::PoseStamped stop_pose;
     std::vector<geometry_msgs::PoseStamped> TARGET;//FSノードから取得したフロンティア領域
-    std::vector<std::tuple<int, float, float, float>> robot1lengths;//ロボット１の自己位置から目的地までの長さのコンテナ
-    std::vector<std::tuple<int, float, float, float>> robot2lengths;//ロボット２の自己位置から目的地までの長さのコンテナ
+    std::vector<std::tuple<int, float, float, float>> robot1lengths;//ロボット１の自己位置から目的地までの距離と目的地座標のコンテナ<seq,path_length,TARGET_x,TARGET_y>
+    std::vector<std::tuple<int, float, float, float>> robot2lengths;//ロボット２の自己位置から目的地までの距離と目的地座標のコンテナ<seq,path_length,TARGET_x,TARGET_y>
     std::vector<std::tuple<int, int, float>> for_sort;//組み合わせたロボット同士の長さが小さい順にソートする用＜robot1_seq, robot2_seq, length＞
     int robot1path_count=0;
     int robot2path_count=0;
@@ -144,6 +144,7 @@ class server_planning
     ros::Publisher test_map_pub2;
     ros::Publisher robot1_final_target_pub;
     ros::Publisher robot2_final_target_pub;
+    ros::Publisher path_of_target_pub;
     ros::NodeHandle nh1;
     ros::NodeHandle nh2;
     ros::NodeHandle robot1_final_target_nh;
@@ -158,6 +159,7 @@ class server_planning
     ros::NodeHandle get_param_nh;
     ros::NodeHandle arrive1_nh;
     ros::NodeHandle arrive2_nh;
+    ros::NodeHandle path_of_target_nh;
     ros::CallbackQueue queue1;
     ros::CallbackQueue queue2;
     ros::CallbackQueue queueF;
@@ -196,8 +198,10 @@ class server_planning
     bool queueF_judge=false;
     bool odom_queue_flag=false;
     bool cant_find_final_target_flag=false;
+    bool Search_End_Flag = false;
     int arrive1;
     int arrive2;
+    int robot1_and_robot2_Extraction_Target_is_not_find = 0;
     std_msgs::Int8 timing_int;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target_r1;
     std::vector<geometry_msgs::PoseStamped> Extraction_Target_r2;
@@ -209,7 +213,7 @@ class server_planning
 server_planning::server_planning():
 robot_front_point(0.5),
 search_length(0.1),
-avoid_target(0.1),
+avoid_target(1),
 receive_robot_path_wait_time(2)
 {
     nh1.setCallbackQueue(&queue1);
@@ -243,6 +247,7 @@ receive_robot_path_wait_time(2)
     r2_voronoi_grid_sub=r2_voronoi_map_nh.subscribe("/robot2/costmap_to_voronoi/costmap_to_voronoi/voronoi_grid", 1, &server_planning::r2_voronoi_map_CB, this);
     arrive1_sub = arrive1_nh.subscribe("/arrive_flag1", 1, &server_planning::arrive1_flag, this);
     arrive2_sub = arrive2_nh.subscribe("/arrive_flag2", 1, &server_planning::arrive2_flag, this);
+    path_of_target_pub = path_of_target_nh.advertise<geometry_msgs::PoseStamped>("/path_of_target",1);
     get_param_nh.getParam("/robot1_init_x",robot1_init_x);
     get_param_nh.getParam("/robot1_init_y",robot1_init_y);
     get_param_nh.getParam("/robot2_init_x",robot2_init_x);
@@ -271,8 +276,6 @@ void server_planning::frontier_target_CB(const geometry_msgs::PoseArray::ConstPt
 {    
     cout << "[frontier_target_CB]----------------------------------------" << endl;
     TARGET.clear();
-    cout << "Frontier seq: " << Target->header.seq;
-    cout << "Target size: " << Target->poses.size() << endl;
     fro_num = Target->poses.size();
     TARGET.resize(fro_num);
     cout << "TARGET size: " << TARGET.size() << endl;
@@ -280,8 +283,6 @@ void server_planning::frontier_target_CB(const geometry_msgs::PoseArray::ConstPt
     {
         TARGET[i].header = Target->header;
         TARGET[i].pose = Target->poses[i];
-        cout << "TARGET : " << TARGET[i].header << endl;
-        cout << "TARGET : " << TARGET[i].pose << endl;
     }
     frontier_target2map(TARGET);
     queueF_judge = true;
@@ -300,7 +301,6 @@ void server_planning::frontier_target2map(const std::vector<geometry_msgs::PoseS
     //Targetの型をfloatからintにする（map配列に座標を変換してその中の値を参照するため）
     frontier_x.resize(Target.size());//Targetはこの関数の引数。常にTARGETが渡されている。
     frontier_y.resize(Target.size());
-    cout << "   TARGET size: " << Target.size() << endl;
     for(int i = 0; i < Target.size(); i++)
     {
         frontier_x[i] = (int)Target[i].pose.position.x+1;
@@ -339,17 +339,10 @@ void server_planning::OptimalTarget(void)
     std::string robot1header("/robot1/map");
     std::string robot2header("/robot2/map");
 
-    cout << "robot1lengths size:" << robot1lengths.size() << endl;
-    cout << "robot2lengths size:" << robot2lengths.size() << endl;
     robot1lengths.shrink_to_fit();
     robot2lengths.shrink_to_fit();
     for_sort.clear();
     for_sort.resize(robot1lengths.size()*robot2lengths.size());
-    cout << "robot1lengths size:" << robot1lengths.size() << endl;
-    cout << "robot2lengths size:" << robot2lengths.size() << endl;
-    cout << "for_sort size: " << for_sort.size() << endl;
-    cout << "std::get<1>(robot1lengths[0]):" << std::get<1>(robot1lengths[0])<< endl;
-    cout << "std::get<1>(robot2lengths[0]):" << std::get<1>(robot2lengths[0])<< endl;
     
     for(int i=0; i<robot1lengths.size(); i++)
     {
@@ -358,16 +351,12 @@ void server_planning::OptimalTarget(void)
             if(std::get<1>(robot1lengths[i]) != 0 && std::get<1>(robot2lengths[i]) != 0)
             {
                 for_sort[count] = std::make_tuple(i,j,std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[j]));
-                cout << "sum length: " << std::get<1>(robot1lengths[i]) + std::get<1>(robot2lengths[j]) << endl;
-                cout << "for_sort num: " << std::get<2>(for_sort[count]) << endl;
                 count++;
             }
         }
     }
     for_sort.shrink_to_fit();
-    cout << "test" << endl;
     target_sort(for_sort);
-    cout << "test" << endl;
     final_target1.pose.position.x = std::get<2>(robot1lengths[std::get<0>(for_sort[0])]);
     final_target1.pose.position.y = std::get<3>(robot1lengths[std::get<0>(for_sort[0])]);
     final_target1.header.frame_id = robot1header;
@@ -377,12 +366,11 @@ void server_planning::OptimalTarget(void)
     final_target2.header.frame_id = robot2header;
     final_target2.pose.orientation.w = 1.0;
     check_avoid_target = sqrt(pow(final_target1.pose.position.x - (final_target2.pose.position.x + 3.0), 2) + pow(final_target1.pose.position.y - (final_target2.pose.position.y), 2));
-    cout << "min_length: " << min_length << endl;
     if(check_avoid_target >= avoid_target)
     {
-        cout << "final_target1:" << final_target1 << endl;
-        cout << "final_target2:" << final_target2 << endl;
+        cout << "final_target1:\n" << final_target1 << endl;
         robot1_final_target_pub.publish(final_target1);
+        cout << "final_target2:\n" << final_target2 << endl;
         robot2_final_target_pub.publish(final_target2);
     }
     else
@@ -413,8 +401,6 @@ void server_planning::map_input(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     search_length_cell = search_length/map_resolution;
     half_sq = search_length_cell/2;
     isinput = true;
-    ROS_INFO_STREAM("   Map is updated");
-    cout << "   map_width :"<< map_width << "map_height :" << map_height <<  "map_resolution: " << map_resolution << endl;
     cout << "[map_input]----------------------------------------\n" << endl;
 }
 bool server_planning::map_isinput(void)
@@ -436,17 +422,12 @@ void server_planning::robot1path(const nav_msgs::Path::ConstPtr &path_msg)
     cout << "   [robot1path]----------------------------------------" << endl;
     nav_msgs::Path path_tmp = *path_msg;
     float path_length = 0;
-    cout << "count: " << robot1path_count << endl;
     for(int j=1;j<path_tmp.poses.size();j++)
     {
         path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
     }
-    cout << "path_length: " << path_length << endl;
-    cout << "robot1path_count: " << robot1path_count << endl;
     robot1lengths[robot1path_count] = std::make_tuple(robot1path_count, path_length, robot1TARGET[robot1path_count].pose.position.x, robot1TARGET[robot1path_count].pose.position.y);
     robot1path_count++;
-    cout << "robot1lengths seq: " << std::get<0>(robot1lengths[robot1path_count]) << endl;
-    cout << "robot1lengths size: " << robot1lengths.size() << endl;
     robot1_path_update_flag = true;
     cout << "   [robot1path]----------------------------------------\n" << endl;
 }
@@ -455,16 +436,14 @@ void server_planning::robot2path(const nav_msgs::Path::ConstPtr &path_msg)
     cout << "   [robot2path]----------------------------------------" << endl;
     nav_msgs::Path path_tmp = *path_msg;
     float path_length = 0;
-    cout << "count: " << robot2path_count << endl;
     for(int j=1;j<path_tmp.poses.size();j++)
     {
         path_length += sqrt(pow(path_tmp.poses[j].pose.position.x-path_tmp.poses[j-1].pose.position.x,2)+pow(path_tmp.poses[j].pose.position.y - path_tmp.poses[j-1].pose.position.y,2));
     }
-    cout << "path_length: " << path_length << endl;
     robot2lengths[robot2path_count] = std::make_tuple(robot2path_count, path_length, robot2TARGET[robot2path_count].pose.position.x, robot2TARGET[robot2path_count].pose.position.y);
+    cout << robot2path_count << ", "<< path_length << ", "<< robot2TARGET[robot2path_count].pose.position.x << ", "<< robot2TARGET[robot2path_count].pose.position.y << endl;
+
     robot2path_count++;
-    cout << "robot2lengths seq: " << std::get<0>(robot2lengths[robot2path_count]) << endl; 
-    cout << "robot2lengths size: " << robot2lengths.size() << endl;
     robot2_path_update_flag=true;
     cout << "   [robot2path]----------------------------------------\n" << endl;
 }
@@ -473,7 +452,6 @@ void server_planning::Extraction_Target(void)
     cout << "[Extraction_Target]----------------------------------------" << endl;    
     enhance_voronoi_map();
     geometry_msgs::PoseStamped t_target;
-    cout << "TARGET size: " << TARGET.size() << endl;
     pre_frox.resize(TARGET.size());
     pre_froy.resize(TARGET.size());
     Extracted_sum = 0;
@@ -483,7 +461,6 @@ void server_planning::Extraction_Target(void)
         pre_frox[i] = (TARGET[i].pose.position.x-map_origin.position.x)/map_resolution;
         pre_froy[i] = (TARGET[i].pose.position.y-map_origin.position.y)/map_resolution;
     }
-    cout << "pre_frox: " << pre_frox.size() << " pre_froy: " << pre_froy.size() << endl;
 
     int k;
     for(k=0;k<fro_num;k++)
@@ -563,12 +540,10 @@ void server_planning::Extraction_Target(void)
                 t_target.pose.orientation.y = 0.0;
                 t_target.pose.orientation.z = 0.0;
                 t_target.pose.orientation.w = 1.0;
-                cout << "t_target" << t_target << endl;
                 Extraction_Target_r1.push_back(t_target);
             }
         }
     }
-    cout << "r1 Extracted target size: " << Extraction_Target_r1.size() << endl;
 
     
     for(int j=0; j < map_height; j++)
@@ -587,13 +562,7 @@ void server_planning::Extraction_Target(void)
             }
         }
     }
-    cout << "r2 Extracted target size: " << Extraction_Target_r2.size() << endl;
     Extracted_sum = Extraction_Target_r1.size() + Extraction_Target_r2.size();
-    cout << "Extracted_sum: " << Extracted_sum << endl;
-    if(Extraction_Target_r1.size() == 0 || Extraction_Target_r2.size() == 0)
-    {
-        cant_find_final_target_flag = true;
-    }
     cout << "[Extraction_Target]----------------------------------------\n" << endl;
 }
 
@@ -602,9 +571,6 @@ void server_planning::r1_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr&
     cout << "[r1_voronoi_map_CB]----------------------------------------" << endl;
     r1_map_height = voronoi_map_msg ->info.height;
     r1_map_width = voronoi_map_msg ->info.width;
-    cout << "voronoi_map width: " << voronoi_map_msg->info.width << endl;
-    cout << "voronoi_map height: " << voronoi_map_msg->info.height << endl;
-    cout << "voronoi_map resolution: " << voronoi_map_msg->info.resolution << endl;
     //ボロノイグリッド格納用の配列を確保
     r1_Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
     for(int p = 0; p < voronoi_map_msg->info.width; p++)
@@ -628,9 +594,6 @@ void server_planning::r2_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr&
     cout << "[r2_voronoi_map_CB]----------------------------------------" << endl;
     r2_map_height = voronoi_map_msg ->info.height;
     r2_map_width = voronoi_map_msg ->info.width;
-    cout << "voronoi_map width: " << voronoi_map_msg->info.width << endl;
-    cout << "voronoi_map height: " << voronoi_map_msg->info.height << endl;
-    cout << "voronoi_map resolution: " << voronoi_map_msg->info.resolution << endl;
     //ボロノイグリッド格納用の配列を確保
     r2_Voronoi_grid_array = new int*[voronoi_map_msg->info.width];
     for(int p = 0; p < voronoi_map_msg->info.width; p++)
@@ -652,56 +615,37 @@ void server_planning::r2_voronoi_map_CB(const nav_msgs::OccupancyGrid::ConstPtr&
 void server_planning::SP_Memory_release(void)
 {
     cout << "[Memory_release]----------------------------------------" << endl;
-    cout << "r1_voronoi_map_update:" << r1_voronoi_map_update << endl;
-    cout << "r1_map_width: " << r1_map_width << endl;
-    cout << "map_width: " << map_width << endl;
     if(r1_voronoi_map_update)
     {
-        cout << "TEST" << endl;
         for(int p = 0; p < r1_map_width; p++)
         {
             delete[] r1_Voronoi_grid_array[p];
         }
-        cout << "TEST" << endl;
         delete[] r1_Voronoi_grid_array;
-        cout << "TEST" << endl;
         for(int p = 0; p < map_width; p++)
         {
             delete[] r1_enhanced_Voronoi_grid_array[p];
         }
-        cout << "TEST" << endl;
         delete[] r1_enhanced_Voronoi_grid_array;
-        cout << "TEST" << endl;
         r1_voronoi_map_update = false;
-        cout << "TEST" << endl;
     }
-    cout << "r2_vorono_map_update:" << r2_voronoi_map_update << endl;
-    cout << "r2_map_width: " << r1_map_width << endl;
-    cout << "map_width: " << map_width << endl;
     if(r2_voronoi_map_update)
     {
-        cout << "TEST1" << endl;
         for(int p = 0; p < r2_map_width; p++)
         {
             delete[] r2_Voronoi_grid_array[p];
         }
-        cout << "TEST2" << endl;
         delete[] r2_Voronoi_grid_array;
-        cout << "TEST3" << endl;
         for(int p = 0; p < map_width; p++)
         {
             delete[] r2_enhanced_Voronoi_grid_array[p];
         }
-        cout << "TEST4" << endl;
         r2_voronoi_map_update = false;
-        cout << "TEST5" << endl;
     }
-    cout << "TEST6" << endl;
     for(int p = 0; p < map_width; p++)
     {
         delete[] Frontier_array[p];
     }
-    cout << "TEST7" << endl;
     delete[] Frontier_array;
     cout << "[Memory_release]----------------------------------------\n" << endl;
 }
@@ -710,86 +654,162 @@ void server_planning::FT2robots(void)
 {
     cout << "[FT2robots start]----------------------------------------" << endl;
     int test_count = 0;
-    robot1lengths.resize(Extracted_sum);
-    robot2lengths.resize(Extracted_sum);
-    cout << "FT2robots Extracted_sum size: " << Extracted_sum << endl;
+    robot1lengths.resize(Extraction_Target_r1.size());
+    robot2lengths.resize(Extraction_Target_r2.size());
     std::string robot1header("/robot1/map");
     std::string robot2header("/robot2/map");
-    robot1TARGET.resize(Extracted_sum);
-    robot2TARGET.resize(Extracted_sum);
-    cout << "robot1lengths size: " << robot1lengths.size() << endl;
-    cout << "Extraction_Target_r1 size: " << Extraction_Target_r1.size() << endl;
-    cout << "robot1TARGET size: " << robot1TARGET.size() << endl;
-    cout << "robot2lengths size: " << robot2lengths.size() << endl;
-    cout << "Extraction_Target_r2 size: " << Extraction_Target_r2.size() << endl;
-    cout << "robot2TARGET size: " << robot2TARGET.size() << endl;
-    if(Extraction_Target_r1.size() != 0)
-    {  
-        cout << "first if" << endl;
-        for(int i = 0; i < Extraction_Target_r1.size(); i++)
-        {
-            cout << "for start" << endl;
-            robot1TARGET[i].header.frame_id = robot1header;
-            robot1TARGET[i].header.seq = i;
-            robot1TARGET[i].pose.position.x = Extraction_Target_r1[i].pose.position.x;
-            robot1TARGET[i].pose.position.y = Extraction_Target_r1[i].pose.position.y;
-            while(!robot1_path_update_flag && ros::ok())
-            {
-                if(i == Extraction_Target_r1.size()-1)break;
-                else
-                {
-                    cout << "robot1 target : " << robot1TARGET[i] << endl;
-                    target2robot1.publish(robot1TARGET[i]);
-                    int count_robot1_update_flag_callback_executed = 0;
-                    //cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
-                    do
-                    {
-                        queue1.callOne(ros::WallDuration(0.2));
-                        count_robot1_update_flag_callback_executed++;
-                    //    cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
-                    }while(count_robot1_update_flag_callback_executed <= 5 * receive_robot_path_wait_time && !robot1_path_update_flag);
-                    if(count_robot1_update_flag_callback_executed >= 5 * receive_robot_path_wait_time)break;
-                }
-            }
-            cout << "test" << endl;
-            robot1_path_update_flag = false;
-            test_count++;
-        }
-        stop_pose.header.frame_id = robot1header;
-        target2robot1.publish(stop_pose);
-        cout << "test_count: " << test_count << endl;
-    }
-    cout << "test2" << endl;
-    test_count = 0;
-    if(Extraction_Target_r2.size() != 0)
+    robot1TARGET.resize(Extraction_Target_r1.size());
+    robot2TARGET.resize(Extraction_Target_r2.size());
+    cout << "robot1TARGET size:" << robot1TARGET.size() << endl;
+    cout << "Extraction_Target_r1 size:" << Extraction_Target_r1.size() << endl;
+    cout << "robot2TARGET size:" << robot2TARGET.size() << endl;
+    cout << "Extraction_Target_rr2 size:" << Extraction_Target_r2.size() << endl;
+    if(Extraction_Target_r1.size() == 0 && Extraction_Target_r2.size() == 0)
     {
-        for(int i = 0; i < Extraction_Target_r2.size(); i++)
-        {
-            robot2TARGET[i].header.frame_id = robot2header;
-            robot2TARGET[i].header.seq = i;
-            robot2TARGET[i].pose.position.x = Extraction_Target_r2[i].pose.position.x - 3.0;
-            robot2TARGET[i].pose.position.y = Extraction_Target_r2[i].pose.position.y;
-            while(!robot2_path_update_flag && ros::ok())
+        cant_find_final_target_flag = true;
+    }
+    else
+    {
+        if(Extraction_Target_r1.size() != 0)
+        {  
+            for(int i = 0; i < Extraction_Target_r1.size(); i++)
             {
-                if(i == Extraction_Target_r2.size()-1)break;
-                else
+                robot1TARGET[i].header.frame_id = robot1header;
+                robot1TARGET[i].header.seq = i;
+                robot1TARGET[i].pose.position.x = Extraction_Target_r1[i].pose.position.x;
+                robot1TARGET[i].pose.position.y = Extraction_Target_r1[i].pose.position.y;
+                while(!robot1_path_update_flag && ros::ok())
                 {
-                    target2robot2.publish(robot2TARGET[i]);
-                    int count_robot2_update_flag_callback_executed = 0;
-                    do
+                    if(i == Extraction_Target_r1.size()-1)
                     {
-                        queue2.callOne(ros::WallDuration(0.2));
-                        count_robot2_update_flag_callback_executed++;
-                    }while(count_robot2_update_flag_callback_executed <= 5 * receive_robot_path_wait_time && !robot2_path_update_flag);
-                    if(count_robot2_update_flag_callback_executed >= 5 * receive_robot_path_wait_time)break;
+                        path_of_target_pub.publish(robot1TARGET[i]);
+                        break;
+                    }
+                    else
+                    {
+                        path_of_target_pub.publish(robot1TARGET[i]);
+                        int count_robot1_update_flag_callback_executed = 0;
+                        //cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
+                        do
+                        {
+                            queue1.callOne(ros::WallDuration(0.2));
+                            count_robot1_update_flag_callback_executed++;
+                        //    cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
+                        }while(count_robot1_update_flag_callback_executed <= 5 * receive_robot_path_wait_time && !robot1_path_update_flag);
+                        if(count_robot1_update_flag_callback_executed >= 5 * receive_robot_path_wait_time)break;
+                    }
                 }
+                robot1_path_update_flag = false;
+                test_count++;
             }
-            robot2_path_update_flag = false;
-            test_count++;
+            stop_pose.header.frame_id = robot1header;
+            //arget2robot1.publish(stop_pose);
         }
-        cout << "test_count: " << test_count << endl;
-        stop_pose.header.frame_id = robot2header;
-        target2robot2.publish(stop_pose);
+        else
+        {
+            for(int i = 0; i < Extraction_Target_r2.size(); i++)
+            {
+                robot1TARGET[i].header.frame_id = robot1header;
+                robot1TARGET[i].header.seq = i;
+                robot1TARGET[i].pose.position.x = Extraction_Target_r2[i].pose.position.x;
+                robot1TARGET[i].pose.position.y = Extraction_Target_r2[i].pose.position.y;
+                while(!robot1_path_update_flag && ros::ok())
+                {
+                    if(i == Extraction_Target_r2.size()-1)
+                    {
+                        path_of_target_pub.publish(robot1TARGET[i]);
+                        break;
+                    }
+                    else
+                    {
+                        path_of_target_pub.publish(robot1TARGET[i]);
+                        int else_count_robot1_update_flag_callback_executed = 0;
+                        //cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
+                        do
+                        {
+                            queue1.callOne(ros::WallDuration(0.2));
+                            else_count_robot1_update_flag_callback_executed++;
+                        //    cout << "count_robot1_update_flag_callback_executed: " << count_robot1_update_flag_callback_executed << endl;
+                        }while(else_count_robot1_update_flag_callback_executed <= 5 * receive_robot_path_wait_time && !robot1_path_update_flag);
+                        if(else_count_robot1_update_flag_callback_executed >= 5 * receive_robot_path_wait_time)break;
+                    }
+                }
+                robot1_path_update_flag = false;
+                test_count++;
+            }
+        }
+
+        robot1TARGET.shrink_to_fit();
+        test_count = 0;
+        if(Extraction_Target_r2.size() != 0)
+        {
+            for(int i = 0; i < Extraction_Target_r2.size(); i++)
+            {
+                robot2TARGET[i].header.frame_id = robot2header;
+                robot2TARGET[i].header.seq = i;
+                robot2TARGET[i].pose.position.x = Extraction_Target_r2[i].pose.position.x - 3.0;
+                cout << "robot2TARGET[i].pose.position.x :" << robot2TARGET[i].pose.position.x << endl;
+                robot2TARGET[i].pose.position.y = Extraction_Target_r2[i].pose.position.y;
+                cout << "robot2TARGET[i].pose.position.y :" << robot2TARGET[i].pose.position.y << endl;
+                while(!robot2_path_update_flag && ros::ok())
+                {
+                    if(i == Extraction_Target_r2.size()-1)
+                    {
+                        path_of_target_pub.publish(robot2TARGET[i]);
+                        break;
+                    }
+                    else
+                    {
+                        path_of_target_pub.publish(robot2TARGET[i]);
+                        int count_robot2_update_flag_callback_executed = 0;
+                        do
+                        {
+                            queue2.callOne(ros::WallDuration(0.2));
+                            count_robot2_update_flag_callback_executed++;
+                        }while(count_robot2_update_flag_callback_executed <= 5 * receive_robot_path_wait_time && !robot2_path_update_flag);
+                        if(count_robot2_update_flag_callback_executed >= 5 * receive_robot_path_wait_time)break;
+                    }
+                }
+                robot2_path_update_flag = false;
+                test_count++;
+            }
+            stop_pose.header.frame_id = robot2header;
+            //target2robot2.publish(stop_pose);
+        }
+        else
+        {
+            for(int i = 0; i < Extraction_Target_r1.size(); i++)
+            {
+                robot2TARGET[i].header.frame_id = robot2header;
+                robot2TARGET[i].header.seq = i;
+                robot2TARGET[i].pose.position.x = Extraction_Target_r1[i].pose.position.x - 3.0;
+                cout << "robot2TARGET[i].pose.position.x :" << robot2TARGET[i].pose.position.x << endl;
+                robot2TARGET[i].pose.position.y = Extraction_Target_r1[i].pose.position.y;
+                cout << "robot2TARGET[i].pose.position.y :" << robot2TARGET[i].pose.position.y << endl;
+                while(!robot2_path_update_flag && ros::ok())
+                {
+                    if(i == Extraction_Target_r1.size()-1)
+                    {
+                        path_of_target_pub.publish(robot2TARGET[i]);
+                        break;
+                    }
+                    else
+                    {
+                        path_of_target_pub.publish(robot2TARGET[i]);
+                        int else_count_robot2_update_flag_callback_executed = 0;
+                        do
+                        {
+                            queue2.callOne(ros::WallDuration(0.2));
+                            else_count_robot2_update_flag_callback_executed++;
+                        }while(else_count_robot2_update_flag_callback_executed <= 5 * receive_robot_path_wait_time && !robot2_path_update_flag);
+                        if(else_count_robot2_update_flag_callback_executed >= 5 * receive_robot_path_wait_time)break;
+                    }
+                }
+                robot2_path_update_flag = false;
+                test_count++;
+            }
+        }
+        robot2TARGET.shrink_to_fit();
     }
     cout << "[FT2robots end]----------------------------------------\n" << endl;
 }
@@ -826,10 +846,8 @@ void server_planning::create_robot1_grid(void)
     plot_for_robot1_vorgrid.pose.orientation.y = 0.0;
     plot_for_robot1_vorgrid.pose.orientation.z = 0.0;
     plot_for_robot1_vorgrid.pose.orientation.w = 1.0;
-    target2robot1.publish(plot_for_robot1_vorgrid);
-    cout << "   odom_queue_flag: " << odom_queue_flag << endl;
+    path_of_target_pub.publish(plot_for_robot1_vorgrid);
     odom_queue_flag=true;
-    cout << "   odom_queue_flag: " << odom_queue_flag << endl;
     cout << "   [create_robot1_grid]----------------------------------------" << endl;
 }
 void server_planning::create_robot2_grid(void)
@@ -845,10 +863,8 @@ void server_planning::create_robot2_grid(void)
     plot_for_robot2_vorgrid.pose.orientation.y = 0.0;
     plot_for_robot2_vorgrid.pose.orientation.z = 0.0;
     plot_for_robot2_vorgrid.pose.orientation.w = 1.0;
-    target2robot2.publish(plot_for_robot2_vorgrid);
-    cout << "   odom_queue_flag: " << odom_queue_flag << endl;
+    path_of_target_pub.publish(plot_for_robot2_vorgrid);
     odom_queue_flag=true;
-    cout << "   odom_queue_flag: " << odom_queue_flag << endl;
     cout << "   [create_robot2_grid]----------------------------------------" << endl;
 }
 
@@ -884,8 +900,6 @@ void server_planning::enhance_voronoi_map(void)
             r1_enhanced_Voronoi_grid_array[x][y] = 0;
         }
     }
-    cout << "map_height: " << map_height << " map_width: " << map_width << endl;
-    cout << "r1_map_height: " << r1_map_height << " r2_map_width: " << r2_map_width << endl;
     //拡張したボロノイ配列にトピックから受け取ったボロノイ図の情報を反映する。
     for(int y = 0; y < r1_map_height; y++)
     {
@@ -921,7 +935,6 @@ void server_planning::enhance_voronoi_map(void)
     //拡張したボロノイ配列にトピックから受け取ったボロノイ図の情報を反映する。
     int shift_y;
     shift_y = (int)robot2_init_x*(-1.0);
-    cout << "   shift_y: " << shift_y <<endl;
     for(int y = 0; y < r2_map_height; y++)
     {
         for(int x = shift_y; x < r2_map_width; x++)
@@ -987,31 +1000,22 @@ void server_planning::Clear_Vector(void)
     cout << "Clear_Vector" << endl;
 	pre_frox.clear();
 	pre_frox.shrink_to_fit();
-    cout << "pre_frox" << endl;
 	pre_froy.clear();
 	pre_froy.shrink_to_fit();
-    cout << "pre_froy" << endl;
     Extraction_Target_r1.clear();
 	Extraction_Target_r1.shrink_to_fit();
-    cout << "Extraction_Target_r1" << endl;
     Extraction_Target_r2.clear();
 	Extraction_Target_r2.shrink_to_fit();
-    cout << "Extraction_Target_r2" << endl;
     robot1lengths.clear();
 	robot1lengths.shrink_to_fit();
-    cout << "robot1lengths" << endl;
     robot2lengths.clear();
 	robot2lengths.shrink_to_fit();
-    cout << "robot2lengths" << endl;
     robot1TARGET.clear();
     robot1TARGET.shrink_to_fit();
-    cout << "robot1TARGET" << endl;
     robot2TARGET.clear();
     robot2TARGET.shrink_to_fit();
-    cout << "robot2TARGET" << endl;
     for_sort.clear();
     for_sort.shrink_to_fit();
-    cout << "for_sort" << endl;
 }
 
 void server_planning::Clear_Num(void)
@@ -1024,33 +1028,30 @@ void server_planning::arrive1_flag(const std_msgs::Int8::ConstPtr &msg)
 {
     cout << "arrive1_flag start" << endl;
     arrive1 = msg -> data;
-    cout << "arrive1_flag: " << arrive1 << endl;
     cout << "arrive1_flag end" << endl;
 }
 void server_planning::arrive2_flag(const std_msgs::Int8::ConstPtr &msg)
 {
     cout << "arrive2_flag start" << endl;
     arrive2 = msg -> data;
-    cout << "arrive2_flag: " << arrive2 << endl;
     cout << "arrive2_flag end" << endl;
 }
 int server_planning::update_target(bool reset)
 {
+    cout << "update_target start" << endl;
     static int update_target_count = 1;
     float check_avoid_target;
     std::string robot1header("/robot1/map");
     std::string robot2header("/robot2/map");
-    cout << "update_target_count: " << update_target_count << endl;
-    cout << "robot1lengths size: " << robot1lengths.size() << endl;
-    cout << "robot2lengths size: " << robot2lengths.size() << endl;
-    cout << "for_sort size: " << for_sort.size() << endl;
     if(reset == true)
     {
+        cout << "update_target func initialize" << endl;
        update_target_count = 1;
        return 0;
     }
     if(update_target_count == robot1lengths.size() || update_target_count == robot2lengths.size())
     {
+        cout << "cant_find_final_target_flag is true" << endl;
        cant_find_final_target_flag = true;
        return 1;
     }
@@ -1063,20 +1064,30 @@ int server_planning::update_target(bool reset)
     final_target2_update.header.frame_id = robot2header;
     final_target2_update.pose.orientation.w = 1.0;
     update_target_count++;
-
-    check_avoid_target = sqrt(pow(final_target1_update.pose.position.x - (final_target2_update.pose.position.x + 3.0), 2) + pow(final_target1_update.pose.position.y - (final_target2_update.pose.position.y), 2));
-    if(check_avoid_target >= avoid_target)
+    if(final_target2_update.pose.position.x !=0 && final_target2_update.pose.position.y != 0)
     {
-        cout << "final_target1_update:" << final_target1_update << endl;
-        cout << "final_target2_update:" << final_target2_update << endl;
-        robot1_final_target_pub.publish(final_target1_update);
-        robot2_final_target_pub.publish(final_target2_update);
-        return 1;
+        cout << "x and y is not 0" << endl;
+        check_avoid_target = sqrt(pow(final_target1_update.pose.position.x - (final_target2_update.pose.position.x + 3.0), 2) + pow(final_target1_update.pose.position.y - (final_target2_update.pose.position.y), 2));
+        if(check_avoid_target >= avoid_target)
+        {
+            cout << "final_target1_update:" << final_target1_update << endl;
+            cout << "final_target2_update:" << final_target2_update << endl;
+            robot1_final_target_pub.publish(final_target1_update);
+            robot2_final_target_pub.publish(final_target2_update);
+            return 1;
+        }
     }
     else
     {
+        cout << "update_target else" << endl;
+        cout << "final_target1_update x :" << final_target1_update.pose.position.x << endl;
+        cout << "final_target1_update y :" << final_target1_update.pose.position.y << endl;
+        cout << "final_target2_update x :" << final_target2_update.pose.position.x << endl;
+        cout << "final_target2_update y :" << final_target2_update.pose.position.y << endl;
+        cout << endl;
         return 0;
     }
+    cout << "update_target end" << endl;
 }
 void server_planning::target_sort(std::vector<std::tuple<int, int, float>> for_sort)
 {
