@@ -5,10 +5,12 @@
 <group ns="$(arg robot_name)">
     <node pkg="multi_robot" name="robot_moving" type="robot_moving" output="screen"/>
 </group>
-        <include file="$(find multi_turtlebot_launch)/launch/bringup/minimal.launch">
-            <arg name="robot_name" value="$(arg robot_name)"/>
-        </include>  
-        <include file="$(find multi_turtlebot_launch)/launch/rtabmap/mapping.launch">
-            <arg name="robot_name" value="$(arg robot_name)"/>
-        </include>  
+
+<!-- <include file="$(find multi_turtlebot_launch)/launch/bringup/minimal.launch">
+    <arg name="robot_name" value="$(arg robot_name)"/>
+</include>  
+<include file="$(find multi_turtlebot_launch)/launch/rtabmap/mapping.launch">
+    <arg name="robot_name" value="$(arg robot_name)"/>
+</include>   -->
+
 </launch>
