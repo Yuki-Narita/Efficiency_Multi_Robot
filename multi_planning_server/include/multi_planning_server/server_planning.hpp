@@ -233,8 +233,8 @@ avoid_target(3)
     map_sub=mn.subscribe("/server/grid_map_merge/merge_map", 1, &server_planning::map_input, this);
     robot1_odom_sub=robot1_odom_nh.subscribe("/robot1/odom", 1, &server_planning::robot1_odom_CB, this);
     robot2_odom_sub=robot2_odom_nh.subscribe("/robot2/odom", 1, &server_planning::robot2_odom_CB, this);
-    r1_voronoi_grid_sub=r1_voronoi_map_nh.subscribe("/robot1/costmap_to_voronoi/voronoi_grid", 1, &server_planning::r1_voronoi_map_CB, this);
-    r2_voronoi_grid_sub=r2_voronoi_map_nh.subscribe("/robot2/costmap_to_voronoi/voronoi_grid", 1, &server_planning::r2_voronoi_map_CB, this);
+    r1_voronoi_grid_sub=r1_voronoi_map_nh.subscribe("/robot1/costmap_to_voronoi/costmap_to_voronoi/voronoi_grid", 1, &server_planning::r1_voronoi_map_CB, this);
+    r2_voronoi_grid_sub=r2_voronoi_map_nh.subscribe("/robot2/costmap_to_voronoi/costmap_to_voronoi/voronoi_grid", 1, &server_planning::r2_voronoi_map_CB, this);
     arrive1_sub = arrive1_nh.subscribe("/arrive_flag1", 1, &server_planning::arrive1_flag, this);
     arrive2_sub = arrive2_nh.subscribe("/arrive_flag2", 1, &server_planning::arrive2_flag, this);
     get_param_nh.getParam("/robot1_init_x",robot1_init_x);
@@ -376,7 +376,7 @@ void server_planning::OptimalTarget(void)
     {
         cout << "final_target1:" << final_target1 << endl;
         cout << "final_target2:" << final_target2 << endl;
-        //robot1_final_target_pub.publish(final_target1);
+        robot1_final_target_pub.publish(final_target1);
         robot2_final_target_pub.publish(final_target2);
     }
     else
@@ -713,13 +713,15 @@ void server_planning::FT2robots(void)
             robot1TARGET[i].header.seq = i;
             robot1TARGET[i].pose.position.x = Extraction_Target_r1[i].pose.position.x;
             robot1TARGET[i].pose.position.y = Extraction_Target_r1[i].pose.position.y;
-            target2robot1.publish(robot1TARGET[i]);
+            //target2robot1.publish(robot1TARGET[i]);
+            robot1_final_target_pub.publish(robot1TARGET[i]);
             if(i == robot1TARGET.size()-1) break;
             test_count++;
             rate.sleep();
         }
         stop_pose.header.frame_id = robot1header;
-        target2robot1.publish(stop_pose);
+        //target2robot1.publish(stop_pose);
+        robot1_final_target_pub.publish(stop_pose);
         cout << "test_count: " << test_count << endl;
     }
     cout << "test2" << endl;
@@ -766,7 +768,8 @@ void server_planning::costmap_CB(const nav_msgs::OccupancyGrid::ConstPtr& costma
 void server_planning::create_robot1_grid(void)
 {
     cout << "   [create_robot1_grid]----------------------------------------" << endl;
-    plot_for_robot1_vorgrid.header.frame_id = "/server/map";
+    //plot_for_robot1_vorgrid.header.frame_id = "/server/merge_map";
+    plot_for_robot1_vorgrid.header.frame_id = "/robot1/map";
     plot_for_robot1_vorgrid.header.stamp = ros::Time::now();
     plot_for_robot1_vorgrid.pose.position.x = robot1_odom.pose.pose.position.x + robot_front_point;
     plot_for_robot1_vorgrid.pose.position.y = 0.0;
@@ -775,7 +778,8 @@ void server_planning::create_robot1_grid(void)
     plot_for_robot1_vorgrid.pose.orientation.y = 0.0;
     plot_for_robot1_vorgrid.pose.orientation.z = 0.0;
     plot_for_robot1_vorgrid.pose.orientation.w = 1.0;
-    target2robot1.publish(plot_for_robot1_vorgrid);
+    //target2robot1.publish(plot_for_robot1_vorgrid);
+    robot1_final_target_pub.publish(plot_for_robot1_vorgrid);
     cout << "   odom_queue_flag: " << odom_queue_flag << endl;
     odom_queue_flag=true;
     cout << "   odom_queue_flag: " << odom_queue_flag << endl;
@@ -784,7 +788,8 @@ void server_planning::create_robot1_grid(void)
 void server_planning::create_robot2_grid(void)
 {
     cout << "   [create_robot2_grid]----------------------------------------" << endl;
-    plot_for_robot2_vorgrid.header.frame_id = "/server/map";
+    //plot_for_robot2_vorgrid.header.frame_id = "/server/merge_map";
+    plot_for_robot1_vorgrid.header.frame_id = "/robot2/map";
     plot_for_robot2_vorgrid.header.stamp = ros::Time::now();
     plot_for_robot2_vorgrid.pose.position.x = robot2_odom.pose.pose.position.x + robot_front_point + 3.0;
     plot_for_robot2_vorgrid.pose.position.y = 0.0;
@@ -793,7 +798,8 @@ void server_planning::create_robot2_grid(void)
     plot_for_robot2_vorgrid.pose.orientation.y = 0.0;
     plot_for_robot2_vorgrid.pose.orientation.z = 0.0;
     plot_for_robot2_vorgrid.pose.orientation.w = 1.0;
-    target2robot2.publish(plot_for_robot2_vorgrid);
+    //target2robot2.publish(plot_for_robot2_vorgrid);
+    robot2_final_target_pub.publish(plot_for_robot1_vorgrid);
     cout << "   odom_queue_flag: " << odom_queue_flag << endl;
     odom_queue_flag=true;
     cout << "   odom_queue_flag: " << odom_queue_flag << endl;
@@ -1018,7 +1024,7 @@ int server_planning::update_target(bool reset)
     {
         cout << "final_target1_update:" << final_target1_update << endl;
         cout << "final_target2_update:" << final_target2_update << endl;
-        //robot1_final_target_pub.publish(final_target1_update);
+        robot1_final_target_pub.publish(final_target1_update);
         robot2_final_target_pub.publish(final_target2_update);
         return 1;
     }

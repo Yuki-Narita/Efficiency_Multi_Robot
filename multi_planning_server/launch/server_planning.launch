@@ -8,10 +8,10 @@
         <node pkg="multi_planning_server" type="Frontier_Search" name="Frontier_Search"/>
         <!-- <node pkg="multi_planning_server" type="server_planning" name="server_planning"/> -->
         <node pkg="multi_planning_server" type="server_planning" name="server_planning" output="screen" >
-            <remap from="/robot1/move_base_simple/goal" to="/robot1/costmap_to_voronoi/simple_goal"/>
+            <!-- <remap from="/robot1/move_base_simple/goal" to="/robot1/costmap_to_voronoi/simple_goal"/>
             <remap from="/robot1/final_target" to="/robot1/costmap_to_voronoi/final_target"/>
             <remap from="/robot2/move_base_simple/goal" to="/robot2/costmap_to_voronoi/simple_goal"/>
-            <remap from="/robot2/final_target" to="/robot2/costmap_to_voronoi/final_target"/>
+            <remap from="/robot2/final_target" to="/robot2/costmap_to_voronoi/final_target"/> -->
         </node>
         <!-- <node pkg="multi_planning_server" type="costmap_publisher" name="costmap_publisher"/> -->
         <!-- <node pkg="multi_planning_server" type="check_time_and_area" name="check_time_and_area" output="screen" launch-prefix="xterm -e"/> -->
