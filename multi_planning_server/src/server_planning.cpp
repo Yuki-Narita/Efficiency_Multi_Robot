@@ -22,11 +22,7 @@ int main(int argc, char **argv)
 
     server_planning SP;
 
-<<<<<<< HEAD
     /*
-=======
-/*
->>>>>>> 0718f4bc9c2a13df9ac75cd5a31072b62c750dcf
    //ロボットの個数をパラメータサーバーから取得
     robot_num_nh.getParam("/multi_planning_server/robot_num",robot_num);
     robot_num_nh.getParam("/multi_planning_server/given_robot_num",given_robot_num);
@@ -80,12 +76,8 @@ int main(int argc, char **argv)
         }
 
     }
-<<<<<<< HEAD
     */
 
-=======
-*/
->>>>>>> 0718f4bc9c2a13df9ac75cd5a31072b62c750dcf
     /*
     turn_req_pub = turn_nh.advertise<std_msgs::String>("/firstturn",1);
     SP.pub_msg.data = "turn now";
