@@ -733,11 +733,9 @@ void server_planning::FT2robots(void)
             robot1TARGET[i].header.seq = i;
             robot1TARGET[i].pose.position.x = Extraction_Target_r1[i].pose.position.x;
             robot1TARGET[i].pose.position.y = Extraction_Target_r1[i].pose.position.y;
-<<<<<<< HEAD
             //target2robot1.publish(robot1TARGET[i]);
             robot1_final_target_pub.publish(robot1TARGET[i]);
             if(i == robot1TARGET.size()-1) break;
-=======
             while(!robot1_path_update_flag && ros::ok())
             {
                 if(i == Extraction_Target_r1.size()-1)break;
@@ -758,7 +756,6 @@ void server_planning::FT2robots(void)
             }
             cout << "test" << endl;
             robot1_path_update_flag = false;
->>>>>>> 0718f4bc9c2a13df9ac75cd5a31072b62c750dcf
             test_count++;
         }
         stop_pose.header.frame_id = robot1header;
@@ -823,11 +820,7 @@ void server_planning::costmap_CB(const nav_msgs::OccupancyGrid::ConstPtr& costma
 void server_planning::create_robot1_grid(void)
 {
     cout << "   [create_robot1_grid]----------------------------------------" << endl;
-<<<<<<< HEAD
     //plot_for_robot1_vorgrid.header.frame_id = "/server/merge_map";
-=======
-    //plot_for_robot1_vorgrid.header.frame_id = "/server/map";
->>>>>>> 0718f4bc9c2a13df9ac75cd5a31072b62c750dcf
     plot_for_robot1_vorgrid.header.frame_id = "/robot1/map";
     plot_for_robot1_vorgrid.header.stamp = ros::Time::now();
     plot_for_robot1_vorgrid.pose.position.x = robot_front_point;
@@ -847,13 +840,8 @@ void server_planning::create_robot1_grid(void)
 void server_planning::create_robot2_grid(void)
 {
     cout << "   [create_robot2_grid]----------------------------------------" << endl;
-<<<<<<< HEAD
     //plot_for_robot2_vorgrid.header.frame_id = "/server/merge_map";
     plot_for_robot1_vorgrid.header.frame_id = "/robot2/map";
-=======
-    //plot_for_robot2_vorgrid.header.frame_id = "/server/map";
-    plot_for_robot2_vorgrid.header.frame_id = "/robot2/map";
->>>>>>> 0718f4bc9c2a13df9ac75cd5a31072b62c750dcf
     plot_for_robot2_vorgrid.header.stamp = ros::Time::now();
     plot_for_robot2_vorgrid.pose.position.x = robot_front_point;
     plot_for_robot2_vorgrid.pose.position.y = 0.0;

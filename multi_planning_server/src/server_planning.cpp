@@ -22,6 +22,7 @@ int main(int argc, char **argv)
 
     server_planning SP;
 
+<<<<<<< HEAD
     /*
 =======
 /*
