@@ -17,4 +17,5 @@
         <!-- <node pkg="multi_planning_server" type="check_time_and_area" name="check_time_and_area" output="screen" launch-prefix="xterm -e"/> -->
         <include file="$(find robot_action_mng)/launch/robot_action_mng.launch"/>
     </group>
+    <include file="$(find costmap_to_voronoi)/launch/costmap_to_voronoi.launch"/>
 </launch>
