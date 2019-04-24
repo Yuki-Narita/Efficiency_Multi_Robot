@@ -229,8 +229,8 @@ receive_robot_path_wait_time(2)
     vis_pub = vis_nh.advertise<visualization_msgs::Marker>("/vis_marker/Extraction_Target", 1);
     test_map_pub1 = test_map_nh1.advertise<nav_msgs::OccupancyGrid>("/test_map1", 1);
     test_map_pub2 = test_map_nh2.advertise<nav_msgs::OccupancyGrid>("/test_map2", 1);
-    target2robot1 = t2r1.advertise<geometry_msgs::PoseStamped>("/robot1/move_base_simple/goal",1);
-    target2robot2 = t2r2.advertise<geometry_msgs::PoseStamped>("/robot2/move_base_simple/goal",1);
+    target2robot1 = t2r1.advertise<geometry_msgs::PoseStamped>("/robot1/final_target",1);
+    target2robot2 = t2r2.advertise<geometry_msgs::PoseStamped>("/robot2/final_target",1);
     robot1_final_target_pub = robot1_final_target_nh.advertise<geometry_msgs::PoseStamped>("/robot1/final_target",1);
     robot2_final_target_pub = robot2_final_target_nh.advertise<geometry_msgs::PoseStamped>("/robot2/final_target",1);
     path_sub1=nh1.subscribe("/robot1/costmap_to_voronoi/costmap_to_voronoi/plan", 1, &server_planning::robot1path, this);

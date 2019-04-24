@@ -8,10 +8,12 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "Frontier_Search");
 
     Frontier_Search FS;
+    FrontierSearch fs;
     cout << "Frontier start." << endl;
     
     while(ros::ok())
     {
+        fs.frontierDetection<std::vector<geometry_msgs::Point>>();
         cout << "test1" << endl;
         FS.queueF.callOne(ros::WallDuration(1));
         cout << "test2" << endl;

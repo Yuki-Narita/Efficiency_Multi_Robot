@@ -14,6 +14,19 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   nav_msgs
   geometry_msgs
+  exploration
+  kobuki_msgs
+  sensor_msgs
+  visualization_msgs
+  exploration_msgs
+  tf
+  costmap_2d
+  navfn
+  voronoi_planner
+  move_base_msgs
+  actionlib
+  pcl_ros
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions

@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="multi_planning_server" type="Frontier_Search" name="Frontier_Search"/>
+</launch>
