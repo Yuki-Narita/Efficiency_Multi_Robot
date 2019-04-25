@@ -91,7 +91,7 @@ void robot1_action::moveToGoal(double goalX,double goalY,std::string mapFrame,st
 	//define a client for to send goal requests to the move_base server through a SimpleActionClient
 
 	//actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac("robot1/move_base", true);
-	actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(movebaseNode, true);
+	static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(movebaseNode, true);
 	
 
 	//wait for the action server to come up//5.0秒まで待つ

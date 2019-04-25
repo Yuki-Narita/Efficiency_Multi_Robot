@@ -5,7 +5,10 @@
     <group ns="$(arg topic_ns)">
         <param name="robot_num" value="0"/>
         <param name="given_robot_num" value="$(arg given_robot_num)" />
-        <!-- <node pkg="multi_planning_server" type="Frontier_Search" name="Frontier_Search"/> -->
+        <node pkg="multi_planning_server" type="Frontier_Search" name="Frontier_Search" >
+            <remap from="map" to="/server/grid_map_merge/merge_map"/>
+            <param name="map_frame_id" value="server/merge_map"/>
+        </node>
         <!-- <node pkg="multi_planning_server" type="server_planning" name="server_planning"/> -->
         <node pkg="multi_planning_server" type="server_planning" name="server_planning" output="screen" >
             <!-- <remap from="/robot1/move_base_simple/goal" to="/robot1/costmap_to_voronoi/simple_goal"/>

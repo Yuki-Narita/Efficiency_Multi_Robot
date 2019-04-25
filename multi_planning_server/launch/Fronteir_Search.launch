@@ -1,3 +1,6 @@
 <launch>
-    <node pkg="multi_planning_server" type="Frontier_Search" name="Frontier_Search"/>
+    <node pkg="multi_planning_server" type="Frontier_Search" name="Frontier_Search" output="screen">
+        <remap from="map" to="/server/grid_map_merge/merge_map"/>
+        <param name="map_frame_id" value="server/merge_map"/>
+    </node>
 </launch>
